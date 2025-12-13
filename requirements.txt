@@ -1,0 +1,21 @@
+# ===========================================
+# GEOVISOR DE COSTOS FORESTALES
+# Dependencias Python
+# ===========================================
+
+# Django Framework
+Django>=4.2,<5.0
+djangorestframework>=3.14
+django-cors-headers>=4.3
+
+# Base de datos PostgreSQL
+psycopg2-binary>=2.9
+
+# Variables de entorno
+python-decouple>=3.8
+
+# Librerías GIS (se instalarán cuando se necesiten)
+# geopandas>=0.14
+# shapely>=2.0
+# rasterio>=1.3
+# gdal (instalar vía OSGeo4W o conda en Windows)
