@@ -1,12 +1,13 @@
 """
-Modelos de datos para el Geovisor de Costos Forestales.
+Modelos de datos para el Geovisor de Costos Forestales v2.0.
 
 Define la estructura de la base de datos para el cálculo
 de costos de inversión en plantaciones forestales comerciales.
 
-NOTA: Versión sin dependencias geoespaciales (GDAL/GeoDjango).
-Los campos de ubicación son simplificados para permitir la lógica
-de cálculo de costos sin requerir análisis espacial real.
+VERSIÓN 2.0: Arquitectura simplificada con "Smart Defaults".
+- Sin dependencias de GeoDjango/GDAL
+- Coordenadas como DecimalField
+- Precios referenciales que el usuario puede editar
 """
 
 from django.db import models
@@ -16,15 +17,15 @@ from typing import Optional
 
 class ZonaEconomica(models.Model):
     """
-    Agrupa distritos con costos laborales similares.
+    Agrupa distritos con costos laborales y de insumos similares.
     
-    Define el costo base del jornal y un factor de flete
-    que refleja la dificultad de acceso a la zona.
+    Proporciona valores referenciales (Smart Defaults) que el
+    frontend mostrará al usuario para su validación.
     
     Attributes:
-        nombre: Nombre descriptivo de la zona (ej: "Selva Alta Accesible").
-        costo_jornal_base: Costo del día de trabajo en soles.
-        factor_flete: Multiplicador por dificultad de acceso (1.0 = normal).
+        nombre: Nombre descriptivo de la zona (ej: "Selva Alta").
+        costo_jornal_referencial: Costo sugerido del día de trabajo (S/).
+        costo_planton_referencial: Costo sugerido por plantón (S/).
     """
     
     nombre: str = models.CharField(
@@ -32,16 +33,18 @@ class ZonaEconomica(models.Model):
         unique=True,
         verbose_name="Nombre de la zona"
     )
-    costo_jornal_base: Decimal = models.DecimalField(
+    costo_jornal_referencial: Decimal = models.DecimalField(
         max_digits=8,
         decimal_places=2,
-        verbose_name="Costo jornal base (S/)"
+        verbose_name="Costo jornal referencial (S/)",
+        help_text="Valor sugerido para el frontend"
     )
-    factor_flete: Decimal = models.DecimalField(
-        max_digits=4,
+    costo_planton_referencial: Decimal = models.DecimalField(
+        max_digits=8,
         decimal_places=2,
-        default=Decimal('1.00'),
-        verbose_name="Factor de flete"
+        default=Decimal('0.50'),
+        verbose_name="Costo plantón referencial (S/)",
+        help_text="Valor sugerido para el frontend"
     )
     
     class Meta:
@@ -50,23 +53,24 @@ class ZonaEconomica(models.Model):
         ordering = ['nombre']
     
     def __str__(self) -> str:
-        return f"{self.nombre} (S/ {self.costo_jornal_base}/jornal)"
+        return f"{self.nombre} (Jornal: S/ {self.costo_jornal_referencial})"
 
 
 class Distrito(models.Model):
     """
     Unidad administrativa mínima del Perú.
     
-    Cada distrito pertenece a una zona económica y tiene
-    parámetros estimados de pendiente y acceso para el
-    cálculo de costos.
+    Cada distrito pertenece a una zona económica que sugiere
+    precios referenciales. Incluye coordenadas para visualización
+    en mapa y pendiente estimada para cálculos.
     
     Attributes:
         cod_ubigeo: Código oficial INEI de 6 dígitos (PK).
         nombre: Nombre del distrito.
         zona_economica: Zona económica a la que pertenece.
-        pendiente_promedio_estimada: Pendiente promedio en porcentaje (%).
-        factor_acceso_temporal: Factor de ajuste por accesibilidad (1.0 = normal).
+        latitud: Coordenada para marcador en mapa.
+        longitud: Coordenada para marcador en mapa.
+        pendiente_promedio_estimada: Pendiente promedio en % para cálculos.
     """
     
     cod_ubigeo: str = models.CharField(
@@ -86,17 +90,26 @@ class Distrito(models.Model):
         related_name='distritos',
         verbose_name="Zona económica"
     )
+    latitud: Decimal = models.DecimalField(
+        max_digits=10,
+        decimal_places=7,
+        null=True,
+        blank=True,
+        verbose_name="Latitud",
+        help_text="Coordenada para marcador visual en mapa"
+    )
+    longitud: Decimal = models.DecimalField(
+        max_digits=10,
+        decimal_places=7,
+        null=True,
+        blank=True,
+        verbose_name="Longitud",
+        help_text="Coordenada para marcador visual en mapa"
+    )
     pendiente_promedio_estimada: int = models.PositiveSmallIntegerField(
         default=15,
         verbose_name="Pendiente promedio (%)",
-        help_text="Pendiente promedio estimada del terreno en porcentaje"
-    )
-    factor_acceso_temporal: Decimal = models.DecimalField(
-        max_digits=4,
-        decimal_places=2,
-        default=Decimal('1.00'),
-        verbose_name="Factor de acceso",
-        help_text="Factor de ajuste por accesibilidad (1.0 = normal, >1 = difícil)"
+        help_text="Pendiente promedio estimada del terreno"
     )
     
     class Meta:
@@ -111,25 +124,22 @@ class Distrito(models.Model):
         """
         Calcula el factor de ajuste por pendiente del terreno.
         
-        Basado en la pendiente promedio estimada:
-        - 0-10%: Factor 1.00 (terreno plano)
-        - 11-20%: Factor 1.10
-        - 21-30%: Factor 1.20
-        - >30%: Factor 1.35 (terreno muy inclinado)
+        Según PROMPT_MAESTRO v2.0:
+        - < 15%: Factor 1.00 (Plano)
+        - 15% - 30%: Factor 1.15 (Ondulado)
+        - > 30%: Factor 1.30 (Ladera fuerte)
         
         Returns:
-            Decimal: Factor multiplicador para costos de mano de obra.
+            Decimal: Factor multiplicador para mano de obra.
         """
         pendiente = self.pendiente_promedio_estimada
         
-        if pendiente <= 10:
+        if pendiente < 15:
             return Decimal('1.00')
-        elif pendiente <= 20:
-            return Decimal('1.10')
         elif pendiente <= 30:
-            return Decimal('1.20')
+            return Decimal('1.15')
         else:
-            return Decimal('1.35')
+            return Decimal('1.30')
 
 
 class Cultivo(models.Model):
@@ -177,9 +187,10 @@ class PaqueteTecnologico(models.Model):
     actividades necesarias para el cultivo, agrupadas por año
     y rubro de costo.
     
-    La lógica de cálculo usa el campo sensible_pendiente así:
-        if paquete.sensible_pendiente:
-            costo = cantidad * costo_base * distrito.calcular_factor_pendiente()
+    Lógica de cálculo v2.0:
+    - MANO_OBRA: usa costo_jornal_usuario (del request)
+    - INSUMO (plantones): usa costo_planton_usuario (del request)
+    - INSUMO (otros) / SERVICIOS: usa costo_unitario_referencial (de BD)
     
     Attributes:
         cultivo: Especie forestal relacionada.
@@ -188,9 +199,8 @@ class PaqueteTecnologico(models.Model):
         actividad: Descripción de la actividad.
         unidad_medida: Unidad de medición (Jornal, Kg, etc).
         cantidad_tecnica: Cantidad requerida por hectárea en terreno plano.
-        costo_unitario: Costo por unidad (usado para insumos, servicios).
         sensible_pendiente: Si la pendiente afecta el rendimiento.
-        es_recalce: Si es reposición por mortalidad de plantas.
+        costo_unitario_referencial: Costo fijo para insumos/servicios NO plantones.
     """
     
     class Rubro(models.TextChoices):
@@ -232,66 +242,29 @@ class PaqueteTecnologico(models.Model):
         verbose_name="Cantidad técnica",
         help_text="Cantidad requerida por hectárea en terreno plano"
     )
-    costo_unitario: Decimal = models.DecimalField(
-        max_digits=10,
-        decimal_places=2,
-        default=Decimal('0.00'),
-        verbose_name="Costo unitario (S/)",
-        help_text="Costo por unidad (para insumos/servicios). Si es 0, usa costo jornal."
-    )
     sensible_pendiente: bool = models.BooleanField(
         default=False,
         verbose_name="Sensible a pendiente",
-        help_text="Si la pendiente del terreno afecta el rendimiento de la actividad"
+        help_text="Si la pendiente afecta el rendimiento (solo para mano de obra)"
     )
-    es_recalce: bool = models.BooleanField(
+    costo_unitario_referencial: Decimal = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        default=Decimal('0.00'),
+        verbose_name="Costo unitario referencial (S/)",
+        help_text="Para insumos/servicios que NO son plantones ni mano de obra"
+    )
+    es_planton: bool = models.BooleanField(
         default=False,
-        verbose_name="Es recalce",
-        help_text="Si es reposición por mortalidad de plantas"
+        verbose_name="Es plantón",
+        help_text="True si este insumo corresponde a plantones forestales"
     )
     
     class Meta:
         verbose_name = "Paquete Tecnológico"
         verbose_name_plural = "Paquetes Tecnológicos"
         ordering = ['cultivo', 'anio_proyecto', 'rubro', 'actividad']
-        # Evitar duplicados de la misma actividad en el mismo año/cultivo
         unique_together = ['cultivo', 'anio_proyecto', 'actividad']
     
     def __str__(self) -> str:
         return f"{self.cultivo.nombre} - Año {self.anio_proyecto}: {self.actividad}"
-    
-    def calcular_costo(self, distrito: 'Distrito', hectareas: Decimal = Decimal('1.00')) -> Decimal:
-        """
-        Calcula el costo total de esta actividad para un distrito y área.
-        
-        Args:
-            distrito: Distrito donde se realizará la actividad.
-            hectareas: Número de hectáreas a trabajar.
-        
-        Returns:
-            Decimal: Costo total en soles.
-        """
-        cantidad_ajustada = self.cantidad_tecnica * hectareas
-        
-        # Aplicar factor de pendiente si la actividad es sensible
-        if self.sensible_pendiente:
-            factor_pendiente = distrito.calcular_factor_pendiente()
-            cantidad_ajustada = cantidad_ajustada * factor_pendiente
-        
-        # Determinar el costo base
-        if self.rubro == self.Rubro.MANO_OBRA:
-            # Usar costo del jornal de la zona económica
-            if distrito.zona_economica:
-                costo_base = distrito.zona_economica.costo_jornal_base
-            else:
-                costo_base = Decimal('50.00')  # Valor por defecto
-        else:
-            # Usar costo unitario definido
-            costo_base = self.costo_unitario
-        
-        costo_total = cantidad_ajustada * costo_base
-        
-        # Aplicar factor de acceso
-        costo_total = costo_total * distrito.factor_acceso_temporal
-        
-        return costo_total.quantize(Decimal('0.01'))

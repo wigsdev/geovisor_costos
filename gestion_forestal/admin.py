@@ -1,7 +1,8 @@
 """
-Configuración del panel de administración para Gestion Forestal.
+Configuración del panel de administración para Gestion Forestal v2.0.
 
-Registra los modelos para permitir la gestión desde el admin de Django.
+Registra los modelos con configuración optimizada para la gestión
+de datos del geovisor de costos forestales.
 """
 
 from django.contrib import admin
@@ -12,7 +13,7 @@ from .models import ZonaEconomica, Distrito, Cultivo, PaqueteTecnologico
 class ZonaEconomicaAdmin(admin.ModelAdmin):
     """Administración de zonas económicas."""
     
-    list_display = ['nombre', 'costo_jornal_base', 'factor_flete']
+    list_display = ['nombre', 'costo_jornal_referencial', 'costo_planton_referencial']
     search_fields = ['nombre']
     ordering = ['nombre']
 
@@ -26,7 +27,8 @@ class DistritoAdmin(admin.ModelAdmin):
         'nombre', 
         'zona_economica',
         'pendiente_promedio_estimada',
-        'factor_acceso_temporal'
+        'latitud',
+        'longitud'
     ]
     list_filter = ['zona_economica', 'pendiente_promedio_estimada']
     search_fields = ['cod_ubigeo', 'nombre']
@@ -40,9 +42,13 @@ class DistritoAdmin(admin.ModelAdmin):
         ('Clasificación Económica', {
             'fields': ('zona_economica',)
         }),
+        ('Ubicación', {
+            'fields': ('latitud', 'longitud'),
+            'description': 'Coordenadas para visualización en mapa'
+        }),
         ('Parámetros de Cálculo', {
-            'fields': ('pendiente_promedio_estimada', 'factor_acceso_temporal'),
-            'description': 'Parámetros para el cálculo de costos'
+            'fields': ('pendiente_promedio_estimada',),
+            'description': 'Afecta el factor de pendiente en cálculos'
         }),
     )
 
@@ -67,15 +73,15 @@ class PaqueteTecnologicoAdmin(admin.ModelAdmin):
         'actividad', 
         'cantidad_tecnica',
         'unidad_medida',
-        'costo_unitario',
-        'sensible_pendiente'
+        'sensible_pendiente',
+        'es_planton'
     ]
     list_filter = [
         'cultivo', 
         'anio_proyecto', 
         'rubro', 
         'sensible_pendiente',
-        'es_recalce'
+        'es_planton'
     ]
     search_fields = ['actividad', 'cultivo__nombre']
     ordering = ['cultivo', 'anio_proyecto', 'rubro']
@@ -88,11 +94,11 @@ class PaqueteTecnologicoAdmin(admin.ModelAdmin):
         ('Detalle de Actividad', {
             'fields': ('rubro', 'actividad', 'unidad_medida')
         }),
-        ('Costos', {
-            'fields': ('cantidad_tecnica', 'costo_unitario')
+        ('Cantidad y Costo', {
+            'fields': ('cantidad_tecnica', 'costo_unitario_referencial')
         }),
-        ('Ajustes', {
-            'fields': ('sensible_pendiente', 'es_recalce'),
-            'description': 'Factores que afectan el cálculo de costos'
+        ('Ajustes de Cálculo', {
+            'fields': ('sensible_pendiente', 'es_planton'),
+            'description': 'Determina cómo se calcula el costo final'
         }),
     )
