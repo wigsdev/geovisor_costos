@@ -1,8 +1,8 @@
 """
-Serializadores para la API del Geovisor de Costos Forestales v2.0.
+Serializadores para la API del Geovisor de Costos Forestales v2.1.
 
-Implementa Smart Defaults: incluye datos referenciales de la zona
-económica para que el frontend pueda sugerirlos al usuario.
+Implementa Smart Defaults y Factor de Densidad basado en
+geometría de siembra (Cuadrado, Rectangular, Tres Bolillo).
 """
 
 from rest_framework import serializers
@@ -107,9 +107,31 @@ class PaqueteTecnologicoSerializer(serializers.ModelSerializer):
             'unidad_medida',
             'cantidad_tecnica',
             'sensible_pendiente',
+            'sensible_densidad',
             'costo_unitario_referencial',
             'es_planton'
         ]
+
+
+# ===========================================
+# CONSTANTES PARA CÁLCULO DE DENSIDAD
+# ===========================================
+
+class SistemaSiembra:
+    """Opciones de sistema de siembra."""
+    CUADRADO = 'CUADRADO'
+    RECTANGULAR = 'RECTANGULAR'
+    TRES_BOLILLO = 'TRES_BOLILLO'
+    
+    CHOICES = [
+        (CUADRADO, 'Cuadrado (distancia×distancia)'),
+        (RECTANGULAR, 'Rectangular (largo×ancho)'),
+        (TRES_BOLILLO, 'Tres Bolillo (triángulo equilátero)'),
+    ]
+
+
+# Factor para Tres Bolillo: sin(60°) = sqrt(3)/2 ≈ 0.866025
+FACTOR_TRES_BOLILLO = Decimal('0.866025')
 
 
 class CalculoCostosInputSerializer(serializers.Serializer):
@@ -117,9 +139,10 @@ class CalculoCostosInputSerializer(serializers.Serializer):
     Serializador para el input del endpoint de cálculo de costos.
     
     Valida los datos enviados por el usuario incluyendo los
-    costos que él mismo define (Smart Defaults editados).
+    costos editados y la configuración de geometría de siembra.
     """
     
+    # Campos básicos
     distrito_id = serializers.CharField(
         max_length=6,
         help_text="Código UBIGEO del distrito"
@@ -133,6 +156,8 @@ class CalculoCostosInputSerializer(serializers.Serializer):
         min_value=Decimal('0.01'),
         help_text="Número de hectáreas a cultivar"
     )
+    
+    # Costos definidos por usuario (Smart Defaults editables)
     costo_jornal_usuario = serializers.DecimalField(
         max_digits=8,
         decimal_places=2,
@@ -145,6 +170,8 @@ class CalculoCostosInputSerializer(serializers.Serializer):
         min_value=Decimal('0.01'),
         help_text="Costo del plantón definido por el usuario (S/)"
     )
+    
+    # Rango de años
     anio_inicio = serializers.IntegerField(
         default=0,
         min_value=0,
@@ -155,12 +182,51 @@ class CalculoCostosInputSerializer(serializers.Serializer):
         help_text="Año final del cálculo"
     )
     
+    # Geometría de siembra (Factor de Densidad)
+    sistema_siembra = serializers.ChoiceField(
+        choices=SistemaSiembra.CHOICES,
+        default=SistemaSiembra.CUADRADO,
+        help_text="Geometría de plantación"
+    )
+    distanciamiento_largo = serializers.DecimalField(
+        max_digits=5,
+        decimal_places=2,
+        min_value=Decimal('0.50'),
+        max_value=Decimal('20.00'),
+        help_text="Distancia entre plantas (metros)"
+    )
+    distanciamiento_ancho = serializers.DecimalField(
+        max_digits=5,
+        decimal_places=2,
+        min_value=Decimal('0.00'),
+        max_value=Decimal('20.00'),
+        required=False,
+        allow_null=True,
+        default=None,
+        help_text="Distancia entre hileras (metros). Solo para RECTANGULAR."
+    )
+    
     def validate(self, data):
-        """Valida que anio_fin >= anio_inicio."""
+        """
+        Valida los datos del request.
+        
+        - anio_fin >= anio_inicio
+        - Si es RECTANGULAR, distanciamiento_ancho es requerido y > 0
+        """
+        # Validar rango de años
         if data['anio_fin'] < data['anio_inicio']:
             raise serializers.ValidationError({
                 'anio_fin': 'El año final debe ser mayor o igual al año inicial.'
             })
+        
+        # Validar distanciamiento para sistema rectangular
+        if data['sistema_siembra'] == SistemaSiembra.RECTANGULAR:
+            ancho = data.get('distanciamiento_ancho')
+            if ancho is None or ancho <= Decimal('0'):
+                raise serializers.ValidationError({
+                    'distanciamiento_ancho': 'Requerido y debe ser > 0 para sistema RECTANGULAR.'
+                })
+        
         return data
 
 
@@ -190,15 +256,29 @@ class CalculoCostosOutputSerializer(serializers.Serializer):
     """
     Serializador para el output del cálculo de costos.
     
-    Retorna el detalle de costos por actividad y resúmenes anuales.
+    Retorna el detalle de costos por actividad, factores aplicados
+    y resúmenes anuales.
     """
     
+    # Identificación
     distrito = serializers.CharField()
     cultivo = serializers.CharField()
     hectareas = serializers.DecimalField(max_digits=10, decimal_places=2)
+    
+    # Factores aplicados
     factor_pendiente = serializers.DecimalField(max_digits=4, decimal_places=2)
+    factor_densidad = serializers.DecimalField(max_digits=6, decimal_places=4)
+    
+    # Densidades
+    densidad_base = serializers.IntegerField()
+    densidad_usuario = serializers.IntegerField()
+    sistema_siembra = serializers.CharField()
+    
+    # Costos usados
     costo_jornal_usado = serializers.DecimalField(max_digits=8, decimal_places=2)
     costo_planton_usado = serializers.DecimalField(max_digits=8, decimal_places=2)
+    
+    # Detalle y resúmenes
     detalle_actividades = ActividadCostoSerializer(many=True)
     resumen_anual = ResumenAnualSerializer(many=True)
     costo_total_proyecto = serializers.DecimalField(max_digits=14, decimal_places=2)

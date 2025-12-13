@@ -259,6 +259,11 @@ class PaqueteTecnologico(models.Model):
         verbose_name="Es plantón",
         help_text="True si este insumo corresponde a plantones forestales"
     )
+    sensible_densidad: bool = models.BooleanField(
+        default=False,
+        verbose_name="Sensible a densidad",
+        help_text="True si el costo escala con la densidad de siembra (ej: plantones, hoyado)"
+    )
     
     class Meta:
         verbose_name = "Paquete Tecnológico"

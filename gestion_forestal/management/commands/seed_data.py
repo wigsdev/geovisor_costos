@@ -1,8 +1,8 @@
 """
-Comando para poblar la base de datos con datos de prueba.
+Comando para poblar la base de datos con datos de prueba v2.1.
 
-Crea datos iniciales para verificar el funcionamiento del
-sistema de cálculo de costos forestales.
+Incluye el campo sensible_densidad para probar el cálculo
+de costos con factor de densidad por geometría de siembra.
 
 Uso:
     python manage.py seed_data
@@ -25,7 +25,7 @@ class Command(BaseCommand):
     
     def handle(self, *args, **options):
         """Ejecuta la carga de datos."""
-        self.stdout.write('Iniciando carga de datos de prueba...\n')
+        self.stdout.write('Iniciando carga de datos de prueba (v2.1)...\n')
         
         # 1. Crear Zona Económica
         zona, created = ZonaEconomica.objects.update_or_create(
@@ -64,6 +64,8 @@ class Command(BaseCommand):
         self.stdout.write(f'  ✓ Cultivo "{cultivo.nombre}" {status}')
         
         # 4. Crear Paquete Tecnológico para Bolaina
+        # NOTA: sensible_densidad = True para actividades que escalan con el número de plantas
+        
         actividades_anio_0 = [
             # Mano de obra - Año 0
             {
@@ -73,6 +75,7 @@ class Command(BaseCommand):
                 'unidad_medida': 'Jornal',
                 'cantidad_tecnica': Decimal('12.00'),
                 'sensible_pendiente': True,
+                'sensible_densidad': False,  # Limpieza no depende de densidad
                 'costo_unitario_referencial': Decimal('0.00'),
                 'es_planton': False,
             },
@@ -83,6 +86,7 @@ class Command(BaseCommand):
                 'unidad_medida': 'Jornal',
                 'cantidad_tecnica': Decimal('4.00'),
                 'sensible_pendiente': False,
+                'sensible_densidad': True,  # Más plantas = más puntos a marcar
                 'costo_unitario_referencial': Decimal('0.00'),
                 'es_planton': False,
             },
@@ -93,6 +97,7 @@ class Command(BaseCommand):
                 'unidad_medida': 'Jornal',
                 'cantidad_tecnica': Decimal('15.00'),
                 'sensible_pendiente': True,
+                'sensible_densidad': True,  # Más plantas = más hoyos
                 'costo_unitario_referencial': Decimal('0.00'),
                 'es_planton': False,
             },
@@ -103,6 +108,7 @@ class Command(BaseCommand):
                 'unidad_medida': 'Jornal',
                 'cantidad_tecnica': Decimal('6.00'),
                 'sensible_pendiente': False,
+                'sensible_densidad': True,  # Más plantas = más siembra
                 'costo_unitario_referencial': Decimal('0.00'),
                 'es_planton': False,
             },
@@ -114,16 +120,18 @@ class Command(BaseCommand):
                 'unidad_medida': 'Unidad',
                 'cantidad_tecnica': Decimal('1111.00'),
                 'sensible_pendiente': False,
+                'sensible_densidad': True,  # Escala directamente con densidad
                 'costo_unitario_referencial': Decimal('0.00'),
                 'es_planton': True,
             },
             {
                 'anio_proyecto': 0,
                 'rubro': 'INSUMO',
-                'actividad': 'Fertilizante NPK (saco 50kg)',
-                'unidad_medida': 'Saco',
-                'cantidad_tecnica': Decimal('4.00'),
+                'actividad': 'Fertilizante NPK (Dosis 150g/planta)',
+                'unidad_medida': 'Saco 50kg',
+                'cantidad_tecnica': Decimal('3.33'),  # 150g × 1111 plantas = 166.65kg ÷ 50kg/saco
                 'sensible_pendiente': False,
+                'sensible_densidad': True,  # Fertilización localizada escala con densidad
                 'costo_unitario_referencial': Decimal('120.00'),
                 'es_planton': False,
             },
@@ -138,6 +146,7 @@ class Command(BaseCommand):
                 'unidad_medida': 'Jornal',
                 'cantidad_tecnica': Decimal('8.00'),
                 'sensible_pendiente': True,
+                'sensible_densidad': False,  # Control por área
                 'costo_unitario_referencial': Decimal('0.00'),
                 'es_planton': False,
             },
@@ -148,6 +157,7 @@ class Command(BaseCommand):
                 'unidad_medida': 'Jornal',
                 'cantidad_tecnica': Decimal('2.00'),
                 'sensible_pendiente': False,
+                'sensible_densidad': True,  # Más plantas iniciales = más recalce
                 'costo_unitario_referencial': Decimal('0.00'),
                 'es_planton': False,
             },
@@ -159,6 +169,7 @@ class Command(BaseCommand):
                 'unidad_medida': 'Unidad',
                 'cantidad_tecnica': Decimal('111.00'),
                 'sensible_pendiente': False,
+                'sensible_densidad': True,  # Escala con densidad
                 'costo_unitario_referencial': Decimal('0.00'),
                 'es_planton': True,
             },
@@ -179,6 +190,7 @@ class Command(BaseCommand):
                     'unidad_medida': act_data['unidad_medida'],
                     'cantidad_tecnica': act_data['cantidad_tecnica'],
                     'sensible_pendiente': act_data['sensible_pendiente'],
+                    'sensible_densidad': act_data['sensible_densidad'],
                     'costo_unitario_referencial': act_data['costo_unitario_referencial'],
                     'es_planton': act_data['es_planton'],
                 }
@@ -192,7 +204,7 @@ class Command(BaseCommand):
         
         # Resumen
         self.stdout.write('\n' + '='*50)
-        self.stdout.write(self.style.SUCCESS('✅ Datos de prueba cargados exitosamente!'))
+        self.stdout.write(self.style.SUCCESS('✅ Datos de prueba v2.1 cargados exitosamente!'))
         self.stdout.write('='*50)
         self.stdout.write(f'''
 Resumen:
@@ -206,11 +218,9 @@ Resumen:
   
   - Cultivo: {cultivo.nombre}
     • Turno: {cultivo.turno_estimado} años
-    • Densidad: {cultivo.densidad_base} árboles/ha
-  
-  - Actividades: {len(todas_actividades)} (Año 0 y Año 1)
+    • Densidad base: {cultivo.densidad_base} árboles/ha (3x3)
 
-Prueba el endpoint con:
+Prueba el endpoint con distanciamiento 3x3 (estándar):
   POST /api/calcular-costos/
   {{
     "distrito_id": "220903",
@@ -219,6 +229,17 @@ Prueba el endpoint con:
     "costo_jornal_usuario": 50.00,
     "costo_planton_usuario": 0.80,
     "anio_inicio": 0,
-    "anio_fin": 1
+    "anio_fin": 1,
+    "sistema_siembra": "CUADRADO",
+    "distanciamiento_largo": 3.0
   }}
+
+Prueba con distanciamiento 2.5x2.5 (mayor densidad):
+  {{
+    ...
+    "sistema_siembra": "CUADRADO",
+    "distanciamiento_largo": 2.5
+  }}
+  Densidad resultante: 1600 plantas/ha
+  Factor densidad: 1.44 (44% más plantas)
 ''')

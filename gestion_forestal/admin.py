@@ -74,6 +74,7 @@ class PaqueteTecnologicoAdmin(admin.ModelAdmin):
         'cantidad_tecnica',
         'unidad_medida',
         'sensible_pendiente',
+        'sensible_densidad',
         'es_planton'
     ]
     list_filter = [
@@ -81,6 +82,7 @@ class PaqueteTecnologicoAdmin(admin.ModelAdmin):
         'anio_proyecto', 
         'rubro', 
         'sensible_pendiente',
+        'sensible_densidad',
         'es_planton'
     ]
     search_fields = ['actividad', 'cultivo__nombre']
@@ -98,7 +100,7 @@ class PaqueteTecnologicoAdmin(admin.ModelAdmin):
             'fields': ('cantidad_tecnica', 'costo_unitario_referencial')
         }),
         ('Ajustes de Cálculo', {
-            'fields': ('sensible_pendiente', 'es_planton'),
-            'description': 'Determina cómo se calcula el costo final'
+            'fields': ('sensible_pendiente', 'sensible_densidad', 'es_planton'),
+            'description': 'Determina cómo se calcula el costo final (pendiente y densidad)'
         }),
     )
