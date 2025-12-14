@@ -154,15 +154,23 @@ body,
 .kpi-card {
   background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
   border-radius: 0.75rem;
-  padding: 1rem;
+  padding: 8px;
   text-align: center;
   border: 1px solid #334155;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
 }
 
 .kpi-value {
-  font-size: 1.75rem;
+  font-size: clamp(1rem, 5vw, 1.75rem);
   font-weight: 700;
   color: #10b981;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .kpi-label {
@@ -170,6 +178,13 @@ body,
   color: #94a3b8;
   text-transform: uppercase;
   letter-spacing: 0.05em;
+}
+
+.kpi-currency {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #94a3b8;
+  margin-bottom: 0.25rem;
 }
 
 /* Info card */
@@ -186,6 +201,33 @@ body,
   border: 1px solid rgba(16, 185, 129, 0.3);
   border-radius: 0.5rem;
   padding: 1rem;
+}
+
+/* Year Summary Tabs */
+.year-tab {
+  background: #0f172a;
+  border-radius: 0.5rem;
+  margin-bottom: 0.75rem;
+  overflow: hidden;
+  border: 1px solid #334155;
+}
+
+.year-tab:last-child {
+  margin-bottom: 0;
+}
+
+.year-tab-header {
+  padding: 0.75rem 1rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: linear-gradient(90deg, #1e293b 0%, #0f172a 100%);
+}
+
+.year-tab-content {
+  padding: 0.75rem 1rem;
+  background: #0f172a;
+  border-top: 1px solid #334155;
 }
 
 /* Table */

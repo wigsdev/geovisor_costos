@@ -68,6 +68,7 @@ function App() {
         onClearResults={handleClearResults}
         onRecalculate={handleRecalculate}
         hasPolygon={hasPolygon}
+        hectareas={polygonArea}
       />
 
       <MapView onPolygonCreated={handlePolygonCreated} />

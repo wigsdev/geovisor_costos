@@ -4,7 +4,7 @@
  * Funcionalidades:
  * - Capa base ESRI Satellite
  * - Herramienta de dibujo de polígonos
- * - Cálculo de área en hectáreas
+ * - Evento draw:created para abrir modal
  */
 
 import { useEffect, useRef } from 'react';
@@ -16,6 +16,7 @@ import 'leaflet-draw/dist/leaflet.draw.css';
 import 'leaflet-geometryutil';
 
 // Fix para bug de leaflet-draw con Leaflet 1.9+
+// Error: "type is not defined" en L.Draw.Polygon
 if (L.Draw && L.Draw.Polygon) {
     const originalGetMeasurementString = L.Draw.Polygon.prototype._getMeasurementString;
     L.Draw.Polygon.prototype._getMeasurementString = function () {
@@ -57,11 +58,19 @@ function DrawControl({ onPolygonCreated }) {
     const drawControlRef = useRef(null);
 
     useEffect(() => {
-        if (drawControlRef.current) return;
+        // Evitar duplicados
+        if (drawControlRef.current) {
+            console.log('DrawControl: Ya existe, evitando duplicado');
+            return;
+        }
 
+        console.log('DrawControl: Inicializando...');
+
+        // Crear feature group para los polígonos
         const featureGroup = L.featureGroup().addTo(map);
         featureGroupRef.current = featureGroup;
 
+        // Crear control de dibujo
         const drawControl = new L.Control.Draw({
             position: 'topright',
             draw: {
@@ -79,7 +88,7 @@ function DrawControl({ onPolygonCreated }) {
                 circle: false,
                 circlemarker: false,
                 marker: false,
-                rectangle: false
+                rectangle: false  // Bug con Leaflet 1.9 - usar polígono
             },
             edit: {
                 featureGroup: featureGroup,
@@ -89,23 +98,45 @@ function DrawControl({ onPolygonCreated }) {
 
         map.addControl(drawControl);
         drawControlRef.current = drawControl;
+        console.log('DrawControl: Control agregado al mapa');
 
+        // Evento draw:created
         const onCreated = (e) => {
+            console.log('DrawControl: Forma creada!', e.layerType);
             const layer = e.layer;
+
+            // Limpiar polígonos anteriores
             featureGroup.clearLayers();
+
+            // Agregar nuevo polígono
             featureGroup.addLayer(layer);
 
+            // Calcular área en hectáreas
             let areaM2 = 0;
             if (e.layerType === 'polygon') {
                 const latlngs = layer.getLatLngs()[0];
                 areaM2 = L.GeometryUtil.geodesicArea(latlngs);
+            } else if (e.layerType === 'rectangle') {
+                const bounds = layer.getBounds();
+                const latlngs = [
+                    bounds.getSouthWest(),
+                    bounds.getNorthWest(),
+                    bounds.getNorthEast(),
+                    bounds.getSouthEast()
+                ];
+                areaM2 = L.GeometryUtil.geodesicArea(latlngs);
             }
 
             const areaHa = areaM2 / 10000;
+            console.log('DrawControl: Área calculada:', areaHa, 'ha');
+
+            // Notificar al padre
             onPolygonCreated(areaHa, layer);
         };
 
+        // Evento draw:deleted
         const onDeleted = () => {
+            console.log('DrawControl: Formas eliminadas');
             onPolygonCreated(null, null);
         };
 
@@ -113,6 +144,7 @@ function DrawControl({ onPolygonCreated }) {
         map.on(L.Draw.Event.DELETED, onDeleted);
 
         return () => {
+            console.log('DrawControl: Limpiando...');
             map.off(L.Draw.Event.CREATED, onCreated);
             map.off(L.Draw.Event.DELETED, onDeleted);
             if (drawControlRef.current) {
@@ -129,7 +161,7 @@ function DrawControl({ onPolygonCreated }) {
     return null;
 }
 
-// Centro inicial (Perú - Uchiza, San Martín)
+// Centro inicial (Perú - Región San Martín / Uchiza)
 const PERU_CENTER = [-8.46, -76.46];
 const DEFAULT_ZOOM = 14;
 
@@ -142,13 +174,13 @@ export default function MapView({ onPolygonCreated }) {
                 style={{ height: '100%', width: '100%' }}
                 zoomControl={true}
             >
-                {/* Capa base ESRI Satellite */}
+                {/* Capa base ESRI World Imagery (Satellite) */}
                 <TileLayer
                     url="https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"
-                    attribution='Tiles &copy; Esri'
+                    attribution='Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community'
                 />
 
-                {/* Etiquetas */}
+                {/* Etiquetas sobre satellite */}
                 <TileLayer
                     url="https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}"
                     attribution=""
