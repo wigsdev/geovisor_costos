@@ -42,11 +42,18 @@ class DistritoViewSet(viewsets.ReadOnlyModelViewSet):
     
     Incluye los costos referenciales de la zona económica
     para implementar Smart Defaults en el frontend.
+    
+    Filtros soportados:
+    - ?departamento=San Martin
+    - ?provincia=Tocache
     """
     
     queryset = Distrito.objects.select_related('zona_economica').all()
     serializer_class = DistritoSerializer
     lookup_field = 'cod_ubigeo'
+    filterset_fields = ['departamento', 'provincia']
+    ordering_fields = ['nombre', 'departamento', 'provincia']
+    ordering = ['departamento', 'provincia', 'nombre']
 
 
 class CultivoViewSet(viewsets.ReadOnlyModelViewSet):

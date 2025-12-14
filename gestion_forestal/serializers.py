@@ -54,6 +54,8 @@ class DistritoSerializer(serializers.ModelSerializer):
         fields = [
             'cod_ubigeo',
             'nombre',
+            'departamento',
+            'provincia',
             'zona_economica',
             'zona_economica_nombre',
             'latitud',

@@ -82,6 +82,20 @@ class Distrito(models.Model):
         max_length=100,
         verbose_name="Nombre del distrito"
     )
+    departamento: str = models.CharField(
+        max_length=50,
+        blank=True,
+        default='',
+        verbose_name="Departamento",
+        db_index=True
+    )
+    provincia: str = models.CharField(
+        max_length=50,
+        blank=True,
+        default='',
+        verbose_name="Provincia",
+        db_index=True
+    )
     zona_economica = models.ForeignKey(
         ZonaEconomica,
         on_delete=models.SET_NULL,

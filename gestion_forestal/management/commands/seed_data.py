@@ -1,8 +1,11 @@
 """
-Comando para poblar la base de datos con datos de prueba v2.1.
+Comando para poblar la base de datos con datos de prueba v2.2.
 
-Incluye el campo sensible_densidad para probar el cálculo
-de costos con factor de densidad por geometría de siembra.
+Incluye 4 especies forestales con paquetes tecnológicos diferenciados:
+- Bolaina Blanca (Selva)
+- Capirona (Selva - madera valiosa)
+- Pino (Sierra/Selva Alta)
+- Eucalipto (Sierra/Selva)
 
 Uso:
     python manage.py seed_data
@@ -18,16 +21,271 @@ from gestion_forestal.models import (
 )
 
 
-class Command(BaseCommand):
-    """Comando para cargar datos de prueba en la base de datos."""
+# =====================================================
+# DEFINICIÓN DE ESPECIES FORESTALES
+# =====================================================
+
+ESPECIES = [
+    {
+        'nombre': 'Bolaina Blanca',
+        'turno_estimado': 8,
+        'densidad_base': 1111,  # 3x3
+        'costo_planton': Decimal('0.80'),
+        'descripcion': 'Especie de rápido crecimiento para Selva'
+    },
+    {
+        'nombre': 'Capirona',
+        'turno_estimado': 15,
+        'densidad_base': 1111,  # 3x3
+        'costo_planton': Decimal('1.20'),
+        'descripcion': 'Madera valiosa, crecimiento medio'
+    },
+    {
+        'nombre': 'Pino (Pinus tecunumanii)',
+        'turno_estimado': 20,
+        'densidad_base': 1111,  # 3x3
+        'costo_planton': Decimal('1.50'),
+        'descripcion': 'Para Sierra/Selva Alta, requiere vivero tecnificado'
+    },
+    {
+        'nombre': 'Eucalipto (E. grandis)',
+        'turno_estimado': 12,
+        'densidad_base': 1111,  # 3x3
+        'costo_planton': Decimal('0.70'),
+        'descripcion': 'Especie masiva, bajo costo'
+    },
+]
+
+
+def generar_actividades_base(cultivo_nombre, costo_planton):
+    """
+    Genera las actividades base para cualquier especie forestal.
     
-    help = 'Carga datos de prueba: Zona Selva Alta, Distrito Uchiza, Cultivo Bolaina'
+    Args:
+        cultivo_nombre: Nombre del cultivo para identificar plantones
+        costo_planton: Costo referencial del plantón
+    
+    Returns:
+        Lista de actividades para años 0-5
+    """
+    actividades = []
+    
+    # =====================================================
+    # AÑO 0 - INSTALACIÓN
+    # =====================================================
+    
+    actividades.extend([
+        # Mano de obra - Año 0
+        {
+            'anio_proyecto': 0,
+            'rubro': 'MANO_OBRA',
+            'actividad': 'Limpieza y rozo de terreno',
+            'unidad_medida': 'Jornal',
+            'cantidad_tecnica': Decimal('12.00'),
+            'sensible_pendiente': True,
+            'sensible_densidad': False,
+            'costo_unitario_referencial': Decimal('0.00'),
+            'es_planton': False,
+        },
+        {
+            'anio_proyecto': 0,
+            'rubro': 'MANO_OBRA',
+            'actividad': 'Trazado y marcación',
+            'unidad_medida': 'Jornal',
+            'cantidad_tecnica': Decimal('4.00'),
+            'sensible_pendiente': False,
+            'sensible_densidad': True,
+            'costo_unitario_referencial': Decimal('0.00'),
+            'es_planton': False,
+        },
+        {
+            'anio_proyecto': 0,
+            'rubro': 'MANO_OBRA',
+            'actividad': 'Hoyado 30x30x30',
+            'unidad_medida': 'Jornal',
+            'cantidad_tecnica': Decimal('15.00'),
+            'sensible_pendiente': True,
+            'sensible_densidad': True,
+            'costo_unitario_referencial': Decimal('0.00'),
+            'es_planton': False,
+        },
+        {
+            'anio_proyecto': 0,
+            'rubro': 'MANO_OBRA',
+            'actividad': 'Siembra de plantones',
+            'unidad_medida': 'Jornal',
+            'cantidad_tecnica': Decimal('6.00'),
+            'sensible_pendiente': False,
+            'sensible_densidad': True,
+            'costo_unitario_referencial': Decimal('0.00'),
+            'es_planton': False,
+        },
+        # Insumos - Año 0
+        {
+            'anio_proyecto': 0,
+            'rubro': 'INSUMO',
+            'actividad': f'Plantones de {cultivo_nombre}',
+            'unidad_medida': 'Unidad',
+            'cantidad_tecnica': Decimal('1111.00'),
+            'sensible_pendiente': False,
+            'sensible_densidad': True,
+            'costo_unitario_referencial': costo_planton,
+            'es_planton': True,
+        },
+        {
+            'anio_proyecto': 0,
+            'rubro': 'INSUMO',
+            'actividad': 'Fertilizante NPK (Dosis 150g/planta)',
+            'unidad_medida': 'Saco 50kg',
+            'cantidad_tecnica': Decimal('3.33'),
+            'sensible_pendiente': False,
+            'sensible_densidad': True,
+            'costo_unitario_referencial': Decimal('120.00'),
+            'es_planton': False,
+        },
+    ])
+    
+    # =====================================================
+    # AÑO 1 - MANTENIMIENTO INICIAL
+    # =====================================================
+    
+    actividades.extend([
+        {
+            'anio_proyecto': 1,
+            'rubro': 'MANO_OBRA',
+            'actividad': 'Control de malezas (2 veces)',
+            'unidad_medida': 'Jornal',
+            'cantidad_tecnica': Decimal('8.00'),
+            'sensible_pendiente': True,
+            'sensible_densidad': False,
+            'costo_unitario_referencial': Decimal('0.00'),
+            'es_planton': False,
+        },
+        {
+            'anio_proyecto': 1,
+            'rubro': 'MANO_OBRA',
+            'actividad': 'Recalce (10% mortalidad)',
+            'unidad_medida': 'Jornal',
+            'cantidad_tecnica': Decimal('2.00'),
+            'sensible_pendiente': False,
+            'sensible_densidad': True,
+            'costo_unitario_referencial': Decimal('0.00'),
+            'es_planton': False,
+        },
+        {
+            'anio_proyecto': 1,
+            'rubro': 'INSUMO',
+            'actividad': f'Plantones recalce (10%) - {cultivo_nombre}',
+            'unidad_medida': 'Unidad',
+            'cantidad_tecnica': Decimal('111.00'),
+            'sensible_pendiente': False,
+            'sensible_densidad': True,
+            'costo_unitario_referencial': costo_planton,
+            'es_planton': True,
+        },
+    ])
+    
+    # =====================================================
+    # AÑOS 0-5 - VIGILANCIA Y GASTOS GENERALES
+    # =====================================================
+    
+    for anio in range(0, 6):
+        actividades.append({
+            'anio_proyecto': anio,
+            'rubro': 'SERVICIOS',
+            'actividad': f'Vigilancia y Gastos Generales (Año {anio})',
+            'unidad_medida': 'Global',
+            'cantidad_tecnica': Decimal('1.00'),
+            'sensible_pendiente': False,
+            'sensible_densidad': False,
+            'costo_unitario_referencial': Decimal('50.00'),
+            'es_planton': False,
+        })
+    
+    # =====================================================
+    # AÑOS 2-3 - CONTROL DE MALEZAS
+    # =====================================================
+    
+    for anio in [2, 3]:
+        actividades.append({
+            'anio_proyecto': anio,
+            'rubro': 'MANO_OBRA',
+            'actividad': f'Mantenimiento y Control de Malezas (Año {anio})',
+            'unidad_medida': 'Jornal',
+            'cantidad_tecnica': Decimal('6.00'),
+            'sensible_pendiente': True,
+            'sensible_densidad': False,
+            'costo_unitario_referencial': Decimal('0.00'),
+            'es_planton': False,
+        })
+    
+    # =====================================================
+    # AÑO 3 - PODA DE FORMACIÓN
+    # =====================================================
+    
+    actividades.append({
+        'anio_proyecto': 3,
+        'rubro': 'MANO_OBRA',
+        'actividad': 'Poda de formación (1ra)',
+        'unidad_medida': 'Jornal',
+        'cantidad_tecnica': Decimal('5.00'),
+        'sensible_pendiente': False,
+        'sensible_densidad': True,
+        'costo_unitario_referencial': Decimal('0.00'),
+        'es_planton': False,
+    })
+    
+    # =====================================================
+    # AÑOS 4-5 - MANTENIMIENTO LIGERO
+    # =====================================================
+    
+    for anio in [4, 5]:
+        actividades.append({
+            'anio_proyecto': anio,
+            'rubro': 'MANO_OBRA',
+            'actividad': f'Mantenimiento ligero (Año {anio})',
+            'unidad_medida': 'Jornal',
+            'cantidad_tecnica': Decimal('4.00'),
+            'sensible_pendiente': True,
+            'sensible_densidad': False,
+            'costo_unitario_referencial': Decimal('0.00'),
+            'es_planton': False,
+        })
+    
+    # =====================================================
+    # AÑO 5 - PODA DE ALTURA
+    # =====================================================
+    
+    actividades.append({
+        'anio_proyecto': 5,
+        'rubro': 'MANO_OBRA',
+        'actividad': 'Poda de altura y limpieza de fuste',
+        'unidad_medida': 'Jornal',
+        'cantidad_tecnica': Decimal('8.00'),
+        'sensible_pendiente': False,
+        'sensible_densidad': True,
+        'costo_unitario_referencial': Decimal('0.00'),
+        'es_planton': False,
+    })
+    
+    return actividades
+
+
+class Command(BaseCommand):
+    """Comando para cargar datos de prueba multi-especie."""
+    
+    help = 'Carga datos de prueba v2.2: 4 especies forestales con paquetes tecnológicos'
     
     def handle(self, *args, **options):
         """Ejecuta la carga de datos."""
-        self.stdout.write('Iniciando carga de datos de prueba (v2.1)...\n')
+        self.stdout.write('='*60)
+        self.stdout.write('🌲 Iniciando carga de datos v2.2 (Multi-Especie)...')
+        self.stdout.write('='*60 + '\n')
         
-        # 1. Crear Zona Económica
+        # =====================================================
+        # 1. CREAR ZONA ECONÓMICA
+        # =====================================================
+        
         zona, created = ZonaEconomica.objects.update_or_create(
             nombre='Selva Alta',
             defaults={
@@ -35,211 +293,114 @@ class Command(BaseCommand):
                 'costo_planton_referencial': Decimal('0.80'),
             }
         )
-        status = 'creada' if created else 'actualizada'
-        self.stdout.write(f'  ✓ Zona Económica "{zona.nombre}" {status}')
+        status = '✨ creada' if created else '✓ actualizada'
+        self.stdout.write(f'  {status}: Zona Económica "{zona.nombre}"')
         
-        # 2. Crear Distrito Uchiza
+        # =====================================================
+        # 2. CREAR DISTRITO DE PRUEBA
+        # =====================================================
+        
         distrito, created = Distrito.objects.update_or_create(
-            cod_ubigeo='220903',  # UBIGEO real de Uchiza
+            cod_ubigeo='220903',
             defaults={
                 'nombre': 'Uchiza',
                 'zona_economica': zona,
                 'latitud': Decimal('-8.4600000'),
                 'longitud': Decimal('-76.4600000'),
-                'pendiente_promedio_estimada': 20,  # Ondulado
+                'pendiente_promedio_estimada': 20,
             }
         )
-        status = 'creado' if created else 'actualizado'
-        self.stdout.write(f'  ✓ Distrito "{distrito.nombre}" {status}')
+        status = '✨ creado' if created else '✓ actualizado'
+        self.stdout.write(f'  {status}: Distrito "{distrito.nombre}" ({distrito.cod_ubigeo})')
         
-        # 3. Crear Cultivo Bolaina
-        cultivo, created = Cultivo.objects.update_or_create(
-            nombre='Bolaina Blanca',
-            defaults={
-                'turno_estimado': 8,
-                'densidad_base': 1111,  # Espaciamiento 3x3
-            }
-        )
-        status = 'creado' if created else 'actualizado'
-        self.stdout.write(f'  ✓ Cultivo "{cultivo.nombre}" {status}')
+        # =====================================================
+        # 3. CREAR CULTIVOS (4 ESPECIES)
+        # =====================================================
         
-        # 4. Crear Paquete Tecnológico para Bolaina
-        # NOTA: sensible_densidad = True para actividades que escalan con el número de plantas
+        self.stdout.write('\n📋 Creando/Actualizando cultivos...')
         
-        actividades_anio_0 = [
-            # Mano de obra - Año 0
-            {
-                'anio_proyecto': 0,
-                'rubro': 'MANO_OBRA',
-                'actividad': 'Limpieza y rozo de terreno',
-                'unidad_medida': 'Jornal',
-                'cantidad_tecnica': Decimal('12.00'),
-                'sensible_pendiente': True,
-                'sensible_densidad': False,  # Limpieza no depende de densidad
-                'costo_unitario_referencial': Decimal('0.00'),
-                'es_planton': False,
-            },
-            {
-                'anio_proyecto': 0,
-                'rubro': 'MANO_OBRA',
-                'actividad': 'Trazado y marcación',
-                'unidad_medida': 'Jornal',
-                'cantidad_tecnica': Decimal('4.00'),
-                'sensible_pendiente': False,
-                'sensible_densidad': True,  # Más plantas = más puntos a marcar
-                'costo_unitario_referencial': Decimal('0.00'),
-                'es_planton': False,
-            },
-            {
-                'anio_proyecto': 0,
-                'rubro': 'MANO_OBRA',
-                'actividad': 'Hoyado 30x30x30',
-                'unidad_medida': 'Jornal',
-                'cantidad_tecnica': Decimal('15.00'),
-                'sensible_pendiente': True,
-                'sensible_densidad': True,  # Más plantas = más hoyos
-                'costo_unitario_referencial': Decimal('0.00'),
-                'es_planton': False,
-            },
-            {
-                'anio_proyecto': 0,
-                'rubro': 'MANO_OBRA',
-                'actividad': 'Siembra de plantones',
-                'unidad_medida': 'Jornal',
-                'cantidad_tecnica': Decimal('6.00'),
-                'sensible_pendiente': False,
-                'sensible_densidad': True,  # Más plantas = más siembra
-                'costo_unitario_referencial': Decimal('0.00'),
-                'es_planton': False,
-            },
-            # Insumos - Año 0
-            {
-                'anio_proyecto': 0,
-                'rubro': 'INSUMO',
-                'actividad': 'Plantones de Bolaina',
-                'unidad_medida': 'Unidad',
-                'cantidad_tecnica': Decimal('1111.00'),
-                'sensible_pendiente': False,
-                'sensible_densidad': True,  # Escala directamente con densidad
-                'costo_unitario_referencial': Decimal('0.00'),
-                'es_planton': True,
-            },
-            {
-                'anio_proyecto': 0,
-                'rubro': 'INSUMO',
-                'actividad': 'Fertilizante NPK (Dosis 150g/planta)',
-                'unidad_medida': 'Saco 50kg',
-                'cantidad_tecnica': Decimal('3.33'),  # 150g × 1111 plantas = 166.65kg ÷ 50kg/saco
-                'sensible_pendiente': False,
-                'sensible_densidad': True,  # Fertilización localizada escala con densidad
-                'costo_unitario_referencial': Decimal('120.00'),
-                'es_planton': False,
-            },
-        ]
-        
-        actividades_anio_1 = [
-            # Mano de obra - Año 1
-            {
-                'anio_proyecto': 1,
-                'rubro': 'MANO_OBRA',
-                'actividad': 'Control de malezas (2 veces)',
-                'unidad_medida': 'Jornal',
-                'cantidad_tecnica': Decimal('8.00'),
-                'sensible_pendiente': True,
-                'sensible_densidad': False,  # Control por área
-                'costo_unitario_referencial': Decimal('0.00'),
-                'es_planton': False,
-            },
-            {
-                'anio_proyecto': 1,
-                'rubro': 'MANO_OBRA',
-                'actividad': 'Recalce (10% mortalidad)',
-                'unidad_medida': 'Jornal',
-                'cantidad_tecnica': Decimal('2.00'),
-                'sensible_pendiente': False,
-                'sensible_densidad': True,  # Más plantas iniciales = más recalce
-                'costo_unitario_referencial': Decimal('0.00'),
-                'es_planton': False,
-            },
-            # Insumos - Año 1
-            {
-                'anio_proyecto': 1,
-                'rubro': 'INSUMO',
-                'actividad': 'Plantones recalce (10%)',
-                'unidad_medida': 'Unidad',
-                'cantidad_tecnica': Decimal('111.00'),
-                'sensible_pendiente': False,
-                'sensible_densidad': True,  # Escala con densidad
-                'costo_unitario_referencial': Decimal('0.00'),
-                'es_planton': True,
-            },
-        ]
-        
-        todas_actividades = actividades_anio_0 + actividades_anio_1
-        
-        creadas = 0
-        actualizadas = 0
-        
-        for act_data in todas_actividades:
-            obj, created = PaqueteTecnologico.objects.update_or_create(
-                cultivo=cultivo,
-                anio_proyecto=act_data['anio_proyecto'],
-                actividad=act_data['actividad'],
+        cultivos_creados = []
+        for especie in ESPECIES:
+            cultivo, created = Cultivo.objects.update_or_create(
+                nombre=especie['nombre'],
                 defaults={
-                    'rubro': act_data['rubro'],
-                    'unidad_medida': act_data['unidad_medida'],
-                    'cantidad_tecnica': act_data['cantidad_tecnica'],
-                    'sensible_pendiente': act_data['sensible_pendiente'],
-                    'sensible_densidad': act_data['sensible_densidad'],
-                    'costo_unitario_referencial': act_data['costo_unitario_referencial'],
-                    'es_planton': act_data['es_planton'],
+                    'turno_estimado': especie['turno_estimado'],
+                    'densidad_base': especie['densidad_base'],
                 }
             )
-            if created:
-                creadas += 1
-            else:
-                actualizadas += 1
+            status = '✨' if created else '✓'
+            self.stdout.write(
+                f"  {status} {cultivo.nombre} (Turno: {cultivo.turno_estimado} años, "
+                f"Densidad: {cultivo.densidad_base}, Plantón: S/ {especie['costo_planton']})"
+            )
+            cultivos_creados.append((cultivo, especie['costo_planton']))
         
-        self.stdout.write(f'  ✓ Paquete Tecnológico: {creadas} actividades creadas, {actualizadas} actualizadas')
+        # =====================================================
+        # 4. CREAR PAQUETES TECNOLÓGICOS POR ESPECIE
+        # =====================================================
         
-        # Resumen
-        self.stdout.write('\n' + '='*50)
-        self.stdout.write(self.style.SUCCESS('✅ Datos de prueba v2.1 cargados exitosamente!'))
-        self.stdout.write('='*50)
+        self.stdout.write('\n📦 Creando/Actualizando paquetes tecnológicos...')
+        
+        total_creadas = 0
+        total_actualizadas = 0
+        
+        for cultivo, costo_planton in cultivos_creados:
+            actividades = generar_actividades_base(
+                cultivo.nombre.split(' (')[0],  # Quitar paréntesis del nombre
+                costo_planton
+            )
+            
+            creadas = 0
+            actualizadas = 0
+            
+            for act_data in actividades:
+                obj, created = PaqueteTecnologico.objects.update_or_create(
+                    cultivo=cultivo,
+                    anio_proyecto=act_data['anio_proyecto'],
+                    actividad=act_data['actividad'],
+                    defaults={
+                        'rubro': act_data['rubro'],
+                        'unidad_medida': act_data['unidad_medida'],
+                        'cantidad_tecnica': act_data['cantidad_tecnica'],
+                        'sensible_pendiente': act_data['sensible_pendiente'],
+                        'sensible_densidad': act_data['sensible_densidad'],
+                        'costo_unitario_referencial': act_data['costo_unitario_referencial'],
+                        'es_planton': act_data['es_planton'],
+                    }
+                )
+                if created:
+                    creadas += 1
+                else:
+                    actualizadas += 1
+            
+            self.stdout.write(
+                f"  📦 {cultivo.nombre}: {creadas} nuevas, {actualizadas} actualizadas"
+            )
+            total_creadas += creadas
+            total_actualizadas += actualizadas
+        
+        # =====================================================
+        # RESUMEN FINAL
+        # =====================================================
+        
+        self.stdout.write('\n' + '='*60)
+        self.stdout.write(self.style.SUCCESS('✅ Datos v2.2 cargados exitosamente!'))
+        self.stdout.write('='*60)
+        
         self.stdout.write(f'''
-Resumen:
-  - Zona Económica: {zona.nombre}
-    • Jornal referencial: S/ {zona.costo_jornal_referencial}
-    • Plantón referencial: S/ {zona.costo_planton_referencial}
-  
-  - Distrito: {distrito.nombre} ({distrito.cod_ubigeo})
-    • Pendiente: {distrito.pendiente_promedio_estimada}%
-    • Factor pendiente: {distrito.calcular_factor_pendiente()}
-  
-  - Cultivo: {cultivo.nombre}
-    • Turno: {cultivo.turno_estimado} años
-    • Densidad base: {cultivo.densidad_base} árboles/ha (3x3)
+📊 Resumen:
+  • Zona Económica: {zona.nombre}
+  • Distrito: {distrito.nombre} ({distrito.cod_ubigeo})
+  • Cultivos: {len(cultivos_creados)} especies
+  • Actividades: {total_creadas} nuevas, {total_actualizadas} actualizadas
 
-Prueba el endpoint con distanciamiento 3x3 (estándar):
-  POST /api/calcular-costos/
-  {{
-    "distrito_id": "220903",
-    "cultivo_id": {cultivo.id},
-    "hectareas": 1,
-    "costo_jornal_usuario": 50.00,
-    "costo_planton_usuario": 0.80,
-    "anio_inicio": 0,
-    "anio_fin": 1,
-    "sistema_siembra": "CUADRADO",
-    "distanciamiento_largo": 3.0
-  }}
-
-Prueba con distanciamiento 2.5x2.5 (mayor densidad):
-  {{
-    ...
-    "sistema_siembra": "CUADRADO",
-    "distanciamiento_largo": 2.5
-  }}
-  Densidad resultante: 1600 plantas/ha
-  Factor densidad: 1.44 (44% más plantas)
+🌳 Especies disponibles:''')
+        
+        for cultivo, costo in cultivos_creados:
+            self.stdout.write(f'  • {cultivo.nombre} (ID: {cultivo.id})')
+        
+        self.stdout.write('''
+🧪 Endpoints de prueba:
+  GET  /api/cultivos/         → Lista de especies
+  POST /api/calcular-costos/  → Cálculo de costos
 ''')
