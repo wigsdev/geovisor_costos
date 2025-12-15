@@ -102,3 +102,8 @@ coverage.xml
 logs/
 *.pid
 frontend_backup/
+
+# ---------------------
+# Prompts internos
+# ---------------------
+docs/promps/

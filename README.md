@@ -1,78 +1,143 @@
 # 🌲 GEOVISOR DE COSTOS FORESTALES
 
-Sistema de visualización geoespacial para el análisis y cálculo de costos de producción en el sector forestal peruano.
+Sistema web para el cálculo y visualización de costos de establecimiento de plantaciones forestales en Perú.
+
+![Estado](https://img.shields.io/badge/Estado-En%20Desarrollo-yellow)
+![Versión](https://img.shields.io/badge/Versión-1.0.0--beta-blue)
+![Licencia](https://img.shields.io/badge/Licencia-MIT-green)
 
 ## 📋 Descripción
 
-Este proyecto integra tecnologías de **Sistemas de Información Geográfica (SIG)** con herramientas de análisis de datos para proporcionar:
+**Geovisor Costos Forestales** integra tecnologías de Sistemas de Información Geográfica (SIG) con herramientas de análisis económico para proporcionar:
 
-- Visualización interactiva de parcelas y zonas forestales
-- Cálculo automatizado de costos de producción por especie
-- Análisis geoespacial de factores que afectan la rentabilidad
-- Dashboard con indicadores clave del sector forestal
+- 🗺️ Visualización interactiva de límites administrativos (departamentos, provincias, distritos)
+- 📐 Dibujo de polígonos para áreas de plantación
+- 💰 Cálculo automatizado de costos por hectárea y por año
+- 🌱 Soporte para múltiples especies forestales
+- 📊 Factores de ajuste (densidad, pendiente)
 
 ## 🛠️ Stack Tecnológico
 
 | Componente | Tecnología |
-|------------|-----------|
-| **Backend** | Python 3.x, Django |
-| **Frontend** | React, Leaflet/MapLibre |
-| **Base de Datos** | PostgreSQL + PostGIS |
-| **Geoespacial** | GDAL, GeoPandas, Shapely |
+|------------|------------|
+| **Backend** | Python 3.10+, Django 4.2, Django REST Framework |
+| **Frontend** | React 18, Vite, CSS puro |
+| **Mapas** | Leaflet, React-Leaflet, Leaflet-Draw |
+| **Datos Geo** | TopoJSON, topojson-client |
+| **Base de Datos** | SQLite (desarrollo) / PostgreSQL (producción) |
 
-## 📦 Instalación
+## 📁 Estructura del Proyecto
+
+```
+geovisor_costos/
+├── backend/                 # Configuración Django
+├── gestion_forestal/        # App principal Django
+│   ├── models.py            # Modelos de datos
+│   ├── views.py             # Vistas y API
+│   ├── serializers.py       # Serializadores DRF
+│   └── fixtures/            # Datos iniciales
+├── frontend/                # Aplicación React
+│   ├── src/
+│   │   ├── components/      # Componentes React
+│   │   ├── services/        # Servicios API
+│   │   └── index.css        # Estilos globales
+│   └── public/geo/          # Archivos TopoJSON
+├── docs/                    # Documentación
+└── requirements.txt         # Dependencias Python
+```
+
+## 🚀 Instalación
 
 ### Requisitos Previos
 
 - Python 3.10+
 - Node.js 18+
-- PostgreSQL 14+ con extensión PostGIS
 - Git
 
 ### Backend (Django)
 
 ```bash
 # Clonar el repositorio
-git clone https://github.com/tu-usuario/geovisor_costos.git
+git clone https://github.com/WGCUSP/geovisor_costos.git
 cd geovisor_costos
 
 # Crear y activar entorno virtual
 python -m venv venv
-source venv/bin/activate  # Linux/Mac
-# o en Windows:
-venv\Scripts\activate
+source venv/Scripts/activate  # Windows Git Bash
+# o: venv\Scripts\activate     # Windows CMD
+# o: source venv/bin/activate  # Linux/Mac
 
 # Instalar dependencias
 pip install -r requirements.txt
 
-# Configurar variables de entorno
-cp .env.example .env
-# Editar .env con tus credenciales
-
 # Aplicar migraciones
 python manage.py migrate
 
-# Ejecutar servidor de desarrollo
+# Cargar datos iniciales
+python manage.py loaddata gestion_forestal/fixtures/*.json
+
+# Ejecutar servidor
 python manage.py runserver
 ```
 
 ### Frontend (React)
 
 ```bash
-# Navegar al directorio frontend
 cd frontend
 
 # Instalar dependencias
 npm install
 
-# Ejecutar en modo desarrollo
+# Ejecutar en desarrollo
 npm run dev
 ```
 
+### Acceso
+
+- **Frontend:** http://localhost:5173
+- **Backend API:** http://localhost:8000/api/
+
+## 📖 Documentación
+
+La documentación completa se encuentra en la carpeta `docs/`:
+
+| Documento | Descripción |
+|-----------|-------------|
+| [TASK_LIST.md](docs/TASK_LIST.md) | Lista de tareas por fase |
+| [ROADMAP.md](docs/ROADMAP.md) | Roadmap de versiones |
+| [FASES_DESARROLLO.md](docs/FASES_DESARROLLO.md) | Fases del proyecto |
+| [REGLAS_DESARROLLO.md](docs/REGLAS_DESARROLLO.md) | Convenciones de código |
+| [SDLC.md](docs/SDLC.md) | Ciclo de vida del desarrollo |
+| [MEJORAS_FUTURAS.md](docs/MEJORAS_FUTURAS.md) | Backlog de mejoras |
+
+## 🌳 Departamentos Soportados
+
+El sistema incluye datos geográficos para 7 departamentos de Perú:
+
+1. Ancash
+2. San Martín
+3. Cajamarca
+4. Madre de Dios
+5. Huánuco
+6. Junín
+7. Pasco
+
+## 🤝 Contribuir
+
+1. Fork el repositorio
+2. Crea una rama (`git checkout -b feature/nueva-funcionalidad`)
+3. Commit tus cambios (`git commit -m 'feat: nueva funcionalidad'`)
+4. Push a la rama (`git push origin feature/nueva-funcionalidad`)
+5. Abre un Pull Request
+
 ## 📄 Licencia
 
-Este proyecto está bajo desarrollo. Licencia por definir.
+Este proyecto está bajo la Licencia MIT. Ver [LICENSE](LICENSE) para más detalles.
+
+## 👤 Autor
+
+**WGCUSP**
 
 ---
 
-*Desarrollado para el análisis forestal del Perú 🇵🇪*
+*Desarrollado para el sector forestal del Perú 🇵🇪*
