@@ -80,26 +80,32 @@ export default function ResultsPanel({ results, onClear, onRecalculate, distrito
                 {resumen_anual?.map((anio, idx) => (
                     <div key={idx} className="year-tab">
                         <div className="year-tab-header">
-                            <span className="font-medium">
+                            <span className="text-white font-medium">
                                 {anio.anio === 0 ? '📅 Año 0 (Instalación)' : `📅 Año ${anio.anio}`}
                             </span>
-                            <span className="text-emerald-400 font-bold">
+                            <span className="text-emerald-400 font-bold text-lg">
                                 S/ {parseFloat(anio.total).toLocaleString('es-PE', { minimumFractionDigits: 2 })}
                             </span>
                         </div>
                         <div className="year-tab-content">
-                            <div className="grid grid-cols-3 gap-2 text-xs text-slate-400">
-                                <div>
-                                    <span className="block text-slate-500">Mano Obra</span>
-                                    S/ {parseFloat(anio.mano_obra).toFixed(2)}
+                            <div className="grid grid-cols-3 gap-3">
+                                <div className="year-cost-item">
+                                    <span className="year-cost-label">Mano de Obra</span>
+                                    <span className="year-cost-value text-cyan-400">
+                                        S/ {parseFloat(anio.mano_obra).toLocaleString('es-PE', { minimumFractionDigits: 2 })}
+                                    </span>
                                 </div>
-                                <div>
-                                    <span className="block text-slate-500">Insumos</span>
-                                    S/ {parseFloat(anio.insumos).toFixed(2)}
+                                <div className="year-cost-item">
+                                    <span className="year-cost-label">Insumos</span>
+                                    <span className="year-cost-value text-amber-400">
+                                        S/ {parseFloat(anio.insumos).toLocaleString('es-PE', { minimumFractionDigits: 2 })}
+                                    </span>
                                 </div>
-                                <div>
-                                    <span className="block text-slate-500">Servicios</span>
-                                    S/ {parseFloat(anio.servicios).toFixed(2)}
+                                <div className="year-cost-item">
+                                    <span className="year-cost-label">Servicios</span>
+                                    <span className="year-cost-value text-purple-400">
+                                        S/ {parseFloat(anio.servicios).toLocaleString('es-PE', { minimumFractionDigits: 2 })}
+                                    </span>
                                 </div>
                             </div>
                         </div>

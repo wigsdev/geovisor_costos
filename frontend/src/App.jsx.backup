@@ -10,13 +10,8 @@ import { calcularCostos } from './services/api';
 import './index.css';
 
 function App() {
-  // Estados de ubicación (elevados para compartir con MapView)
-  const [selectedDepartamento, setSelectedDepartamento] = useState('');
-  const [selectedProvincia, setSelectedProvincia] = useState('');
   const [selectedDistrito, setSelectedDistrito] = useState(null);
   const [selectedCultivo, setSelectedCultivo] = useState(null);
-
-  // Estados de la aplicación
   const [polygonArea, setPolygonArea] = useState(null);
   const [hasPolygon, setHasPolygon] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -65,10 +60,6 @@ function App() {
   return (
     <div className="app-container">
       <Sidebar
-        selectedDepartamento={selectedDepartamento}
-        setSelectedDepartamento={setSelectedDepartamento}
-        selectedProvincia={selectedProvincia}
-        setSelectedProvincia={setSelectedProvincia}
         selectedDistrito={selectedDistrito}
         setSelectedDistrito={setSelectedDistrito}
         selectedCultivo={selectedCultivo}
@@ -80,13 +71,7 @@ function App() {
         hectareas={polygonArea}
       />
 
-      <MapView
-        onPolygonCreated={handlePolygonCreated}
-        selectedDepartamento={selectedDepartamento}
-        selectedProvincia={selectedProvincia}
-        selectedDistrito={selectedDistrito}
-        selectedCultivo={selectedCultivo}
-      />
+      <MapView onPolygonCreated={handlePolygonCreated} />
 
       <PlantingConfigModal
         isOpen={isModalOpen}

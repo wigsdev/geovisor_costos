@@ -22,6 +22,10 @@ const CULTIVOS_FALLBACK = [
 ];
 
 export default function Sidebar({
+    selectedDepartamento,
+    setSelectedDepartamento,
+    selectedProvincia,
+    setSelectedProvincia,
     selectedDistrito,
     setSelectedDistrito,
     selectedCultivo,
@@ -35,10 +39,6 @@ export default function Sidebar({
     const [allDistritos, setAllDistritos] = useState([]);
     const [cultivos, setCultivos] = useState([]);
     const [loading, setLoading] = useState(true);
-
-    // Estados para los selectores en cascada
-    const [selectedDepartamento, setSelectedDepartamento] = useState('');
-    const [selectedProvincia, setSelectedProvincia] = useState('');
 
     // Refs para auto-focus en selectores
     const provinciaRef = useRef(null);
@@ -55,28 +55,19 @@ export default function Sidebar({
                 const distritosToUse = distritosData.length > 0 ? distritosData : DISTRITOS_FALLBACK;
                 setAllDistritos(distritosToUse);
                 setCultivos(cultivosData.length > 0 ? cultivosData : CULTIVOS_FALLBACK);
-
-                // Seleccionar primer departamento por defecto
-                const departamentos = [...new Set(distritosToUse.map(d => d.departamento))].sort();
-                if (departamentos.length > 0) {
-                    setSelectedDepartamento(departamentos[0]);
-                }
-
-                // Seleccionar primer cultivo
-                if (cultivosData.length > 0) setSelectedCultivo(cultivosData[0]);
+                // NO auto-seleccionar - filtros deben iniciar vacíos
             } catch (error) {
                 console.warn('Error cargando datos, usando fallback:', error);
                 setAllDistritos(DISTRITOS_FALLBACK);
                 setCultivos(CULTIVOS_FALLBACK);
-                setSelectedDepartamento(DISTRITOS_FALLBACK[0].departamento);
-                setSelectedCultivo(CULTIVOS_FALLBACK[0]);
+                // NO auto-seleccionar - filtros deben iniciar vacíos
             } finally {
                 setLoading(false);
             }
         };
 
         fetchData();
-    }, [setSelectedCultivo]);
+    }, []);
 
     // Lista única de departamentos
     const departamentos = useMemo(() => {
@@ -101,24 +92,16 @@ export default function Sidebar({
             .sort((a, b) => a.nombre.localeCompare(b.nombre));
     }, [allDistritos, selectedDepartamento, selectedProvincia]);
 
-    // Cuando cambia el departamento, resetear provincia y distrito
+    // Cuando cambia el departamento, resetear provincia y distrito (sin auto-seleccionar)
     useEffect(() => {
-        if (provincias.length > 0) {
-            setSelectedProvincia(provincias[0]);
-        } else {
-            setSelectedProvincia('');
-            setSelectedDistrito(null);
-        }
-    }, [selectedDepartamento, provincias, setSelectedDistrito]);
+        setSelectedProvincia('');
+        setSelectedDistrito(null);
+    }, [selectedDepartamento, setSelectedDistrito]);
 
-    // Cuando cambia la provincia, seleccionar primer distrito
+    // Cuando cambia la provincia, resetear distrito (sin auto-seleccionar)
     useEffect(() => {
-        if (distritos.length > 0) {
-            setSelectedDistrito(distritos[0]);
-        } else {
-            setSelectedDistrito(null);
-        }
-    }, [selectedProvincia, distritos, setSelectedDistrito]);
+        setSelectedDistrito(null);
+    }, [selectedProvincia, setSelectedDistrito]);
 
     // Manejar cambio de departamento - auto-focus a provincia
     const handleDepartamentoChange = (e) => {
@@ -196,6 +179,7 @@ export default function Sidebar({
                                     onChange={handleDepartamentoChange}
                                     className="form-select"
                                 >
+                                    <option value="">-- Seleccione departamento --</option>
                                     {departamentos.map(d => (
                                         <option key={d} value={d}>{d}</option>
                                     ))}
@@ -210,8 +194,9 @@ export default function Sidebar({
                                     value={selectedProvincia}
                                     onChange={handleProvinciaChange}
                                     className="form-select"
-                                    disabled={provincias.length === 0}
+                                    disabled={!selectedDepartamento}
                                 >
+                                    <option value="">-- Seleccione provincia --</option>
                                     {provincias.map(p => (
                                         <option key={p} value={p}>{p}</option>
                                     ))}
@@ -226,8 +211,9 @@ export default function Sidebar({
                                     value={selectedDistrito?.cod_ubigeo || ''}
                                     onChange={handleDistritoChange}
                                     className="form-select"
-                                    disabled={distritos.length === 0}
+                                    disabled={!selectedProvincia}
                                 >
+                                    <option value="">-- Seleccione distrito --</option>
                                     {distritos.map(d => (
                                         <option key={d.cod_ubigeo} value={d.cod_ubigeo}>
                                             {d.nombre}
@@ -249,6 +235,7 @@ export default function Sidebar({
                                     onChange={handleCultivoChange}
                                     className="form-select"
                                 >
+                                    <option value="">-- Seleccione cultivo --</option>
                                     {cultivos.map(c => (
                                         <option key={c.id} value={c.id}>
                                             {c.nombre}
