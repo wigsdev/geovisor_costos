@@ -50,6 +50,8 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    # WhiteNoise para archivos estáticos en producción
+    'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     # CORS Middleware - debe ir ANTES de CommonMiddleware
     'corsheaders.middleware.CorsMiddleware',
@@ -83,18 +85,24 @@ WSGI_APPLICATION = 'backend.wsgi.application'
 # ===========================================
 # BASE DE DATOS - PostgreSQL/PostGIS
 # ===========================================
+import dj_database_url
 
 DATABASES = {
     'default': {
-        # TODO: Cambiar a 'django.contrib.gis.db.backends.postgis' cuando GDAL esté configurado
-        'ENGINE': 'django.db.backends.postgresql',
-        'NAME': config('DB_NAME', default='geovisor_db'),
-        'USER': config('DB_USER', default='postgres'),
-        'PASSWORD': config('DB_PASSWORD', default=''),
-        'HOST': config('DB_HOST', default='localhost'),
-        'PORT': config('DB_PORT', default='5432'),
+        'ENGINE': 'django.db.backends.sqlite3',
+        'NAME': BASE_DIR / 'db.sqlite3',
     }
 }
+
+# Configuración dinámica para producción (Railway)
+if config('DATABASE_URL', default=None):
+    DATABASES['default'] = dj_database_url.config(
+        default=config('DATABASE_URL'),
+        conn_max_age=600,
+        ssl_require=True
+    )
+    # GeoDjango requiere este motor específico
+    DATABASES['default']['ENGINE'] = 'django.contrib.gis.db.backends.postgis'
 
 
 # ===========================================
@@ -136,6 +144,8 @@ USE_TZ = True
 
 STATIC_URL = 'static/'
 STATIC_ROOT = BASE_DIR / 'staticfiles'
+# Compresión y almacenamiento eficiente en producción
+STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
 
 # ===========================================
