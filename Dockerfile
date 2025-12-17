@@ -42,4 +42,4 @@ RUN python manage.py collectstatic --noinput
 # ==================================================
 # Usar Gunicorn como servidor WSGI
 # $PORT es inyectado por Railway automáticamente
-CMD gunicorn backend.wsgi:application --bind 0.0.0.0:$PORT
+CMD gunicorn backend.wsgi:application --bind 0.0.0.0:$PORT --workers 2 --threads 4 --timeout 120
