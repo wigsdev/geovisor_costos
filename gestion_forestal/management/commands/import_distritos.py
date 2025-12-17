@@ -65,8 +65,8 @@ class Command(BaseCommand):
         parser.add_argument(
             '--file',
             type=str,
-            default='UBIGEO_DISTRITOS.csv',
-            help='Ruta al archivo CSV (default: UBIGEO_DISTRITOS.csv)'
+            default=os.path.join(settings.BASE_DIR, 'gestion_forestal', 'fixtures', 'UBIGEO_DISTRITOS.csv'),
+            help='Ruta al archivo CSV (default: gestion_forestal/fixtures/UBIGEO_DISTRITOS.csv)'
         )
     
     def handle(self, *args, **options):

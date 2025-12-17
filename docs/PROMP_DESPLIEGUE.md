@@ -1,77 +1,51 @@
-PROMPT: CONFIGURACIÓN DE GEODJANGO + POSTGIS PARA PRODUCCIÓN 🌍
+PROMPT: CONFIGURACIÓN DE GEODJANGO + POSTGIS PARA PRODUCCIÓN 🌍 (V2.0)
 
 ROL: DevOps Engineer & Django Backend Specialist.
 
 CONTEXTO:
 
 Vamos a desplegar el backend en Railway.
-
-Actualmente usamos SQLite, pero para producción necesitamos PostgreSQL con la extensión PostGIS.
-
-Además, GeoDjango requiere librerías de sistema C++ (GDAL, GEOS) que no vienen en los entornos Python estándar.
+Actualmente usamos SQLite, pero para producción necesitamos PostgreSQL con la extensión PostGIS y datos geográficos pre-cargados.
 
 OBJETIVO:
 
-Preparar el repositorio para un despliegue exitoso en Railway con soporte espacial completo.
+Preparar el repositorio para un despliegue exitoso en Railway con soporte espacial completo y datos iniciales.
 
 INSTRUCCIONES TÉCNICAS:
 
 1. Actualización de Dependencias (requirements.txt):
-
-Agrega las siguientes librerías esenciales para producción:
-
-
-
-psycopg2-binary (Adaptador de base de datos PostgreSQL).
-
-gunicorn (Servidor de aplicaciones WSGI para producción).
-
-dj-database-url (Para leer la configuración de la BD desde variables de entorno).
-
-whitenoise (Para servir archivos estáticos en producción).
+   - psycopg2-binary
+   - gunicorn
+   - dj-database-url
+   - whitenoise
 
 2. Configuración del Proyecto (settings.py):
+   - DB Dinámica (DATABASE_URL para PostGIS, SQLite local).
+   - WhiteNoise para estáticos.
 
-Modifica la configuración de DATABASES para que sea dinámica:
+3. Dockerfile (GeoDjango):
+   - Base: python:3.10-slim
+   - Deps Sistema: binutils, libproj-dev, gdal-bin, libgdal-dev
+   - Start Command: gunicorn ...
 
+4. GESTIÓN DE DATOS (NUEVO REQUISITO):
+   
+   Es crítico poblar la base de datos al desplegar.
+   
+   A) Archivos Requeridos:
+      El archivo `gestion_forestal/fixtures/UBIGEO_DISTRITOS.csv` DEBE estar en el repositorio.
+      (Railway lo necesita para importar los 1800+ distritos).
 
+   B) Comandos de Inicialización (Railway Shell):
+      Una vez desplegado, ejecutar en orden:
+      
+      1. `python manage.py migrate` (Crear tablas)
+      2. `python manage.py seed_data` (Cultivos, costos y 1 distrito prueba)
+      3. `python manage.py import_distritos` (Carga masiva de distritos desde el CSV)
+      4. `python manage.py createsuperuser` (Acceso admin)
 
-Si existe la variable de entorno DATABASE_URL (Producción), usa dj_database_url.config() y cambia el motor a 'django.contrib.gis.db.backends.postgis'.
-
-Si no existe (Local), mantén SQLite (o tu configuración local).
-
-Configura whitenoise en MIDDLEWARE para los archivos estáticos.
-
-3. Creación del Dockerfile (CRÍTICO PARA GEODJANGO):
-
-Crea un archivo llamado Dockerfile en la raíz del proyecto para definir el entorno exacto de Linux que Railway usará. Debe contener:
-
-
-
-Base Image: python:3.10-slim (o la versión que uses).
-
-System Dependencies: Ejecuta apt-get update e instala:
-
-binutils
-
-libproj-dev
-
-gdal-bin
-
-libgdal-dev
-
-python3-gdal
-
-Python Dependencies: Copia requirements.txt e instálalos.
-
-Comando de Inicio: CMD gunicorn nombre_de_tu_proyecto.wsgi:application --bind 0.0.0.0:$PORT
-
-ENTREGABLE:
-
-
-
-El contenido actualizado de requirements.txt.
-
-El bloque de código a modificar en settings.py.
-
-El código completo del nuevo Dockerfile.
+ENTREGABLES:
+- requirements.txt actualizado
+- settings.py configurado
+- Dockerfile validado
+- CSV de distritos en `gestion_forestal/fixtures/`
