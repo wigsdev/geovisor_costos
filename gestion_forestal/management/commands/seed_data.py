@@ -279,7 +279,7 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
         """Ejecuta la carga de datos."""
         self.stdout.write('='*60)
-        self.stdout.write('🌲 Iniciando carga de datos v2.2 (Multi-Especie)...')
+        self.stdout.write('🌲 Iniciando carga de datos v1.0 (Producción)...')
         self.stdout.write('='*60 + '\n')
         
         # =====================================================
@@ -384,7 +384,7 @@ class Command(BaseCommand):
         # =====================================================
         
         self.stdout.write('\n' + '='*60)
-        self.stdout.write(self.style.SUCCESS('✅ Datos v2.2 cargados exitosamente!'))
+        self.stdout.write(self.style.SUCCESS('✅ Datos v1.0 cargados exitosamente!'))
         self.stdout.write('='*60)
         
         self.stdout.write(f'''

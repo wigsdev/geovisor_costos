@@ -280,11 +280,8 @@ export default function Sidebar({
                 )}
             </div>
 
-            {/* Footer */}
-            <div className="sidebar-footer">
-                <p className="text-xs text-slate-500">
-                    v2.0 - Geovisor Costos Forestales
-                </p>
+            <div className="absolute bottom-0 w-80 bg-gray-900 border-t border-gray-700 p-2 text-center text-xs text-gray-500">
+                v1.0 - Geovisor Costos Forestales
             </div>
         </div>
     );

@@ -3,7 +3,7 @@
 Sistema web para el cálculo y visualización de costos de establecimiento de plantaciones forestales en Perú.
 
 ![Estado](https://img.shields.io/badge/Estado-En%20Desarrollo-yellow)
-![Versión](https://img.shields.io/badge/Versión-1.0.0--beta-blue)
+![Versión](https://img.shields.io/badge/Versión-1.0.0-blue)
 ![Licencia](https://img.shields.io/badge/Licencia-MIT-green)
 
 ## 📋 Descripción
@@ -73,8 +73,9 @@ pip install -r requirements.txt
 # Aplicar migraciones
 python manage.py migrate
 
-# Cargar datos iniciales
-python manage.py loaddata gestion_forestal/fixtures/*.json
+# Cargar datos iniciales (v1.0)
+python manage.py seed_data
+python manage.py import_distritos
 
 # Ejecutar servidor
 python manage.py runserver
@@ -136,7 +137,7 @@ Este proyecto está bajo la Licencia MIT. Ver [LICENSE](LICENSE) para más detal
 
 ## 👤 Autor
 
-**WGCUSP**
+**wigsdev**
 
 ---
 
