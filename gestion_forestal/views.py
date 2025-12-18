@@ -57,10 +57,33 @@ class DistritoViewSet(viewsets.ReadOnlyModelViewSet):
 
 
 class CultivoViewSet(viewsets.ReadOnlyModelViewSet):
-    """API ViewSet para cultivos forestales (solo lectura)."""
+    """
+    API ViewSet para cultivos forestales (solo lectura).
+    
+    Permite filtrar los cultivos válidos para un distrito específico
+    basándose en los paquetes tecnológicos disponibles para su zona.
+    
+    Uso: ?distrito=220903
+    """
     
     queryset = Cultivo.objects.all()
     serializer_class = CultivoSerializer
+    
+    def get_queryset(self):
+        queryset = Cultivo.objects.all()
+        distrito_id = self.request.query_params.get('distrito', None)
+        
+        if distrito_id:
+            try:
+                distrito = Distrito.objects.get(cod_ubigeo=distrito_id)
+                # Filtrar cultivos que tengan paquetes en la zona del distrito
+                queryset = queryset.filter(
+                    paquete_tecnologico__zona_economica=distrito.zona_economica
+                ).distinct()
+            except Distrito.DoesNotExist:
+                pass
+                
+        return queryset
 
 
 class PaqueteTecnologicoViewSet(viewsets.ReadOnlyModelViewSet):
@@ -231,6 +254,7 @@ class CalcularCostosView(APIView):
         
         actividades = PaqueteTecnologico.objects.filter(
             cultivo=cultivo,
+            zona_economica=distrito.zona_economica,
             anio_proyecto__gte=anio_inicio,
             anio_proyecto__lte=anio_fin
         ).order_by('anio_proyecto', 'rubro', 'actividad')
@@ -249,9 +273,18 @@ class CalcularCostosView(APIView):
             cantidad_base = actividad.cantidad_tecnica * hectareas
             cantidad_ajustada = cantidad_base
             
-            # 1. Aplicar Factor de Densidad (si aplica)
+            # 1. Aplicar Factor de Densidad (Modelo 50/50)
+            # Solo afecta a Mano de Obra sensible a densidad (Hoyado, Plantación)
+            # Fórm: Jornales = (Base * 0.5) + (Base * 0.5 * Factor)
             if actividad.sensible_densidad:
-                cantidad_ajustada = cantidad_ajustada * factor_densidad
+                if actividad.rubro == PaqueteTecnologico.Rubro.MANO_OBRA:
+                    # Modelo 50/50 para Mano de Obra
+                    parte_fija = cantidad_ajustada * Decimal('0.5')
+                    parte_variable = cantidad_ajustada * Decimal('0.5') * factor_densidad
+                    cantidad_ajustada = parte_fija + parte_variable
+                else:
+                    # Para Insumos (Plantones), el factor es 100% directo
+                    cantidad_ajustada = cantidad_ajustada * factor_densidad
             
             # 2. Aplicar Factor de Pendiente (si aplica, solo para mano de obra)
             if actividad.sensible_pendiente and actividad.rubro == PaqueteTecnologico.Rubro.MANO_OBRA:

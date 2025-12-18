@@ -231,6 +231,14 @@ class PaqueteTecnologico(models.Model):
         related_name='paquete_tecnologico',
         verbose_name="Cultivo"
     )
+    zona_economica = models.ForeignKey(
+        'ZonaEconomica',
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+        related_name='paquetes_tecnologicos',
+        verbose_name="Zona Económica (Opcional)"
+    )
     anio_proyecto: int = models.PositiveSmallIntegerField(
         default=0,
         verbose_name="Año del proyecto",
@@ -283,7 +291,66 @@ class PaqueteTecnologico(models.Model):
         verbose_name = "Paquete Tecnológico"
         verbose_name_plural = "Paquetes Tecnológicos"
         ordering = ['cultivo', 'anio_proyecto', 'rubro', 'actividad']
-        unique_together = ['cultivo', 'anio_proyecto', 'actividad']
+        unique_together = ['cultivo', 'zona_economica', 'anio_proyecto', 'actividad']
     
     def __str__(self) -> str:
         return f"{self.cultivo.nombre} - Año {self.anio_proyecto}: {self.actividad}"
+
+
+class ParametroMantenimiento(models.Model):
+    """
+    Define los niveles de intensidad de mantenimiento por región.
+    
+    Permite calibrar los días de jornada necesarios para limpieza
+    y podas según la agresividad de la maleza en cada zona.
+    
+    Attributes:
+        region: Departamento o zona (ej: "SAN MARTIN").
+        nivel_maleza: Clasificación (BAJO, MEDIO, ALTO).
+        dias_limpieza: Días/ha para limpieza (rozo/macheteo).
+        dias_poda: Días/ha para podas.
+        costo_insumos: Costo referencial de insumos anuales.
+    """
+    
+    class NivelMaleza(models.TextChoices):
+        BAJO = 'BAJO', 'Bajo'
+        MEDIO = 'MEDIO', 'Medio'
+        ALTO = 'ALTO', 'Alto'
+    
+    region = models.CharField(
+        max_length=100,
+        unique=True,
+        verbose_name="Región / Departamento"
+    )
+    nivel_maleza = models.CharField(
+        max_length=20,
+        choices=NivelMaleza.choices,
+        verbose_name="Nivel de Maleza"
+    )
+    dias_limpieza = models.DecimalField(
+        max_digits=5,
+        decimal_places=2,
+        verbose_name="Días Limpieza (Jornales)"
+    )
+    dias_poda = models.DecimalField(
+        max_digits=5,
+        decimal_places=2,
+        verbose_name="Días Poda (Jornales)"
+    )
+    costo_insumos = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        verbose_name="Costo Insumos (S/)"
+    )
+    jornal_referencial = models.DecimalField(
+        max_digits=8,
+        decimal_places=2,
+        verbose_name="Jornal Referencial (S/)"
+    )
+
+    class Meta:
+        verbose_name = "Parámetro Mantenimiento"
+        verbose_name_plural = "Parámetros Mantenimiento"
+    
+    def __str__(self):
+        return f"{self.region} ({self.nivel_maleza})"
