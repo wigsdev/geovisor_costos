@@ -3,6 +3,8 @@
 ## 1. Introducción
 El Geovisor permite estimar costos de inversión para plantaciones forestales considerando variables geopaciales y técnicas específicas de cada región del Perú.
 
+🔗 **Acceso a la Aplicación:** [https://geovisor-costos-web.up.railway.app/](https://geovisor-costos-web.up.railway.app/)
+
 ## 2. Flujo de Trabajo
 
 ### Paso 1: Ubicación
