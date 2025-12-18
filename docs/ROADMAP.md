@@ -20,16 +20,16 @@ Sistema web para calcular costos de establecimiento de plantaciones forestales e
 
 ---
 
-## 🚀 Versión 1.1 - Mejoras UX
-**Estado:** Planificado  
-**Fecha objetivo:** Enero 2025
+## 🚀 Versión 1.1 - Mejoras UX (Actual)
+**Estado:** Completado ✅  
+**Fecha:** Diciembre 2024
 
-### Características
-- [ ] Detección automática de ubicación por polígono
-- [ ] Geolocalización del usuario
-- [ ] Tooltips explicativos en formularios
-- [ ] Indicadores de carga mejorados
-- [ ] Validaciones en tiempo real
+### Características Implementadas
+- ✅ Nueva Barra Lateral unificada
+- ✅ Configuración avanzada de geometría (3 Bolillo, Rectangular)
+- ✅ Selección de rango de años (Instalación vs Proyecto)
+- ✅ Validaciones de backend (decimales, integridad)
+- ✅ Persistencia de polígono al recalcular
 
 ---
 

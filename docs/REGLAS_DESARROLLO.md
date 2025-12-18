@@ -108,8 +108,14 @@ python manage.py runserver
 python manage.py makemigrations
 python manage.py migrate
 
-# Cargar fixtures
+# Cargar fixtures iniciales (v1.0)
 python manage.py loaddata initial_data.json
+
+# Cargar datos calibrados v1.1
+python manage.py seed_data_v1_1
+
+# Importar distritos y geometrías
+python manage.py import_distritos
 ```
 
 ### Frontend

@@ -86,35 +86,35 @@ Implementar el motor de cálculo de costos.
 
 ---
 
-## Fase 6: Mejoras UX (En Progreso 🔄)
+## Fase 6: Mejoras UX (Completada ✅)
 
 ### Objetivo
-Pulir la experiencia de usuario.
+Pulir la experiencia de usuario y flexibilidad v1.1.
 
 ### Entregables
-- Validaciones mejoradas
-- Mensajes de error claros
-- Restricciones lógicas (ej: dibujar requiere selecciones)
-- Feedback visual
+- Barra lateral consolidada
+- Inputs de geometría avanzados
+- Selección de rango de años
+- Smart defaults y validaciones
 
 ### Duración
 1 semana
 
 ---
 
-## Fase 7: Documentación (En Progreso 🔄)
+## Fase 7: Documentación (Completada ✅)
 
 ### Objetivo
-Documentar el proyecto para mantenibilidad.
+Documentar el proyecto para mantenibilidad y uso.
 
 ### Entregables
-- Documentación de API
-- Documentación de componentes
-- Roadmap y task list
-- Reglas de desarrollo
+- Manual Técnico
+- Manual de Usuario
+- Guía de Despliegue
+- Actualización de Roadmaps
 
 ### Duración
-1 semana
+3 días
 
 ---
 
