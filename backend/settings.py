@@ -100,7 +100,7 @@ if config('DATABASE_URL', default=None):
     DATABASES['default'] = dj_database_url.config(
         default=config('DATABASE_URL'),
         conn_max_age=600,
-        ssl_require=True
+        ssl_require=False
     )
     # GeoDjango requiere este motor específico
     DATABASES['default']['ENGINE'] = 'django.contrib.gis.db.backends.postgis'
