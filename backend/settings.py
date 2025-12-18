@@ -153,14 +153,7 @@ STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 # CONFIGURACIÓN CORS (para React dev server)
 # ===========================================
 
-CORS_ALLOWED_ORIGINS = [
-    "http://localhost:5173",  # Vite default
-    "http://localhost:5174",  # Vite alternate port
-    "http://localhost:3000",  # React default
-    "http://127.0.0.1:5173",
-    "http://127.0.0.1:5174",
-    "http://127.0.0.1:3000",
-]
+CORS_ALLOWED_ORIGINS = config('CORS_ALLOWED_ORIGINS', default='http://localhost:5173,http://localhost:3000', cast=Csv())
 
 CORS_ALLOW_CREDENTIALS = True
 
