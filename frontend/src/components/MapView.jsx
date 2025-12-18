@@ -285,7 +285,9 @@ function DrawControl({ onPolygonCreated, canDraw }) {
                 areaM2 = L.GeometryUtil.geodesicArea(latlngs);
             }
 
-            const areaHa = areaM2 / 10000;
+            // Convertir a hectáreas y redondear a 2 decimales (Backend exige max 2 decimales)
+            let areaHa = areaM2 / 10000;
+            areaHa = Math.round(areaHa * 100) / 100;
             onPolygonCreated(areaHa, layer);
         };
 

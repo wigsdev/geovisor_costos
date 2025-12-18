@@ -5,7 +5,6 @@
 import { useState, useCallback } from 'react';
 import Sidebar from './components/Sidebar';
 import MapView from './components/MapView';
-import PlantingConfigModal from './components/PlantingConfigModal';
 import { calcularCostos } from './services/api';
 import './index.css';
 
@@ -19,7 +18,7 @@ function App() {
   // Estados de la aplicación
   const [polygonArea, setPolygonArea] = useState(null);
   const [hasPolygon, setHasPolygon] = useState(false);
-  const [isModalOpen, setIsModalOpen] = useState(false);
+  // Modal eliminado: ahora todo se controla desde el Sidebar
   const [isLoading, setIsLoading] = useState(false);
   const [results, setResults] = useState(null);
 
@@ -31,21 +30,35 @@ function App() {
     }
     setPolygonArea(areaHa);
     setHasPolygon(true);
-    setIsModalOpen(true);
+    // Ya no abrimos modal, el usuario ve el sidebar actualizado
   }, []);
 
-  const handleCalculate = async (payload) => {
-    setIsLoading(true);
+  // Calcular / Recalcular costos
+  const handleCalculateWrapper = async (params) => {
     try {
+      setIsLoading(true);
+      const payload = {
+        distrito_id: params.distritoId,
+        cultivo_id: params.cultivoId,
+        hectareas: params.hectareas,
+        anio_inicio: params.anioInicio ?? 0,
+        anio_fin: params.anioFin ?? 20,
+        // Parámetros v1.1
+        sistema_siembra: params.sistemaSiembra,
+        distanciamiento_largo: params.distanciaLargo,
+        distanciamiento_ancho: params.distanciaAncho,
+        costo_jornal_usuario: params.costoJornal,
+        costo_planton_usuario: params.costoPlanton
+      };
+
       const data = await calcularCostos(payload);
       setResults(data);
-      setIsModalOpen(false);
-    } catch (err) {
-      console.error('Error:', err);
-      const errorDetail = err.response?.data
-        ? JSON.stringify(err.response.data, null, 2)
-        : 'No se pudo conectar con el servidor';
-      alert(`Error del servidor:\n${errorDetail}`);
+    } catch (error) {
+      console.error('Error calculando costos:', error);
+      const errorDetail = error.response?.data
+        ? JSON.stringify(error.response.data, null, 2)
+        : 'Error de conexión';
+      alert(`Error al calcular costos:\n${errorDetail}`);
     } finally {
       setIsLoading(false);
     }
@@ -53,13 +66,9 @@ function App() {
 
   const handleClearResults = () => {
     setResults(null);
-    setPolygonArea(null);
-    setHasPolygon(false);
-  };
-
-  const handleRecalculate = () => {
-    setResults(null);
-    setIsModalOpen(true);
+    // No limpiar el polígono para permitir recalcular con nuevos parámetros
+    // setPolygonArea(null);
+    // setHasPolygon(false);
   };
 
   return (
@@ -75,9 +84,10 @@ function App() {
         setSelectedCultivo={setSelectedCultivo}
         results={results}
         onClearResults={handleClearResults}
-        onRecalculate={handleRecalculate}
+        onRecalculate={handleCalculateWrapper}
         hasPolygon={hasPolygon}
         hectareas={polygonArea}
+        isLoading={isLoading}
       />
 
       <MapView
@@ -86,16 +96,6 @@ function App() {
         selectedProvincia={selectedProvincia}
         selectedDistrito={selectedDistrito}
         selectedCultivo={selectedCultivo}
-      />
-
-      <PlantingConfigModal
-        isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
-        onSubmit={handleCalculate}
-        hectareas={polygonArea}
-        distrito={selectedDistrito}
-        cultivo={selectedCultivo}
-        isLoading={isLoading}
       />
     </div>
   );

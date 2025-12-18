@@ -25,9 +25,11 @@ export const getDistritos = async () => {
 
 /**
  * Obtiene la lista de cultivos disponibles.
+ * @param {string} distritoId - (Opcional) Filtrar por distrito
  */
-export const getCultivos = async () => {
-    const response = await api.get('/cultivos/');
+export const getCultivos = async (distritoId = null) => {
+    const params = distritoId ? { distrito: distritoId } : {};
+    const response = await api.get('/cultivos/', { params });
     return response.data;
 };
 
