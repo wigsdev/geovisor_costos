@@ -19,7 +19,27 @@ body,
   height: 100%;
   width: 100%;
   font-family: 'Inter', system-ui, -apple-system, sans-serif;
-  background: #0f172a;
+  background: var(--surface-base);
+}
+
+:root {
+  /* Paleta de Diseño Definida */
+  
+  /* Texto */
+  --text-primary: #f8fafc;   /* Slate-50 */
+  --text-secondary: #cbd5e1; /* Slate-300 */
+  --text-tertiary: #94a3b8;  /* Slate-400 */
+  --text-disabled: #475569;  /* Slate-600 */
+
+  /* Superficies */
+  --surface-base: #0f172a;   /* Slate-900 */
+  --surface-card: #1e293b;   /* Slate-800 */
+  --surface-highlight: #334155; /* Slate-700 */
+
+  /* Marca */
+  --brand-primary: #10b981;  /* Emerald-500 */
+  --brand-hover: #059669;    /* Emerald-600 */
+  --brand-accent: #fbbf24;   /* Amber-400 */
 }
 
 /* Layout principal */
@@ -27,6 +47,7 @@ body,
   display: flex;
   height: 100vh;
   width: 100vw;
+  color: var(--text-primary);
 }
 
 /* Sidebar */

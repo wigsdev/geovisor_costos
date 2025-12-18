@@ -32,6 +32,7 @@ export default function Sidebar({
     setSelectedCultivo,
     results,
     onClearResults,
+    onResetAll,
     onRecalculate,
     hasPolygon,
     hectareas,
@@ -53,6 +54,7 @@ export default function Sidebar({
     // State para Rango de Años
     const [anioInicio, setAnioInicio] = useState(0);
     const [anioFin, setAnioFin] = useState(20);
+    const [incluirServicios, setIncluirServicios] = useState(true);
 
     // Refs para auto-focus en selectores
     const provinciaRef = useRef(null);
@@ -159,6 +161,17 @@ export default function Sidebar({
         setTimeout(() => cultivoRef.current?.focus(), 100);
     };
 
+
+
+    // Efecto: Smart Default para Servicios según Hectáreas
+    // < 10 ha: Servicios desactivados (Pequeño productor)
+    // >= 10 ha: Servicios activados (Mediano/Grande)
+    useEffect(() => {
+        if (hectareas !== null && hectareas !== undefined) {
+            setIncluirServicios(hectareas >= 10);
+        }
+    }, [hectareas]);
+
     // Manejar cambio de cultivo
     const handleCultivoChange = (e) => {
         const cultivo = cultivos.find(c => c.id === parseInt(e.target.value));
@@ -179,7 +192,8 @@ export default function Sidebar({
             costoJornal,
             costoPlanton,
             anioInicio,
-            anioFin
+            anioFin,
+            incluirServicios
         });
     };
 
@@ -208,6 +222,7 @@ export default function Sidebar({
                     <ResultsPanel
                         results={results}
                         onClear={onClearResults}
+                        onReset={onResetAll}
                         onRecalculate={handleRecalculateClick} // Pasamos la nueva funcion wrapper
                         distrito={selectedDistrito}
                         cultivo={selectedCultivo}
@@ -388,6 +403,19 @@ export default function Sidebar({
                                                 className="form-input w-full bg-slate-800 text-white rounded p-2 text-sm border border-slate-600"
                                             />
                                         </div>
+                                    </div>
+
+                                    {/* Servicios Opcionales */}
+                                    <div className="mt-3 pt-3 border-t border-slate-700">
+                                        <label className="flex items-center space-x-2 cursor-pointer">
+                                            <input
+                                                type="checkbox"
+                                                checked={incluirServicios}
+                                                onChange={(e) => setIncluirServicios(e.target.checked)}
+                                                className="form-checkbox text-emerald-500 rounded bg-slate-700 border-slate-500 focus:ring-emerald-500"
+                                            />
+                                            <span className="text-sm text-slate-300">Incluir Servicios (Gestión/Técnica)</span>
+                                        </label>
                                     </div>
 
                                     {/* Botón Calcular Principal */}

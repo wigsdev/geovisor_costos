@@ -226,6 +226,7 @@ class CalcularCostosView(APIView):
         costo_planton = data['costo_planton_usuario']
         anio_inicio = data['anio_inicio']
         anio_fin = data['anio_fin']
+        incluir_servicios = data.get('incluir_servicios', True)
         
         # Parámetros de geometría de siembra
         sistema_siembra = data['sistema_siembra']
@@ -257,7 +258,16 @@ class CalcularCostosView(APIView):
             zona_economica=distrito.zona_economica,
             anio_proyecto__gte=anio_inicio,
             anio_proyecto__lte=anio_fin
-        ).order_by('anio_proyecto', 'rubro', 'actividad')
+        )
+
+        if not incluir_servicios:
+            actividades = actividades.exclude(rubro__in=[
+                PaqueteTecnologico.Rubro.SERVICIOS,
+                PaqueteTecnologico.Rubro.LEGAL,
+                PaqueteTecnologico.Rubro.ACTIVO
+            ])
+            
+        actividades = actividades.order_by('anio_proyecto', 'rubro', 'actividad')
         
         # ===========================================
         # CÁLCULO DE COSTOS

@@ -8,7 +8,10 @@
  * - Botón Exportar PDF (placeholder)
  */
 
-export default function ResultsPanel({ results, onClear, onRecalculate, distrito, cultivo, hectareas }) {
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
+
+export default function ResultsPanel({ results, onClear, onReset, onRecalculate, distrito, cultivo, hectareas }) {
     if (!results) return null;
 
     const {
@@ -18,8 +21,65 @@ export default function ResultsPanel({ results, onClear, onRecalculate, distrito
         densidad_usuario,
         sistema_siembra,
         resumen_anual,
-        detalle_actividades
     } = results;
+
+    const handleExportPDF = () => {
+        const doc = new jsPDF();
+        const pageWidth = doc.internal.pageSize.width;
+
+        // Header
+        doc.setFontSize(18);
+        doc.setTextColor(16, 185, 129); // Emerald-500
+        doc.text('Geovisor Costos Forestales', 14, 20);
+
+        doc.setFontSize(10);
+        doc.setTextColor(100);
+        doc.text(`Fecha: ${new Date().toLocaleDateString()}`, pageWidth - 14, 20, { align: 'right' });
+
+        // Project Info
+        doc.setFontSize(12);
+        doc.setTextColor(0);
+        doc.text(`Ubicacion: ${distrito?.nombre || 'N/A'}`, 14, 30);
+        doc.text(`Cultivo: ${cultivo?.nombre || 'N/A'}`, 14, 37);
+        doc.text(`Area: ${hectareas?.toFixed(2)} ha`, 14, 44);
+        doc.text(`Sistema: ${sistema_siembra}`, 14, 51);
+
+        // KPIs Box
+        doc.setFillColor(240, 253, 244); // Light Emerald bg
+        doc.roundedRect(14, 60, pageWidth - 28, 20, 3, 3, 'F');
+
+        doc.setFontSize(14);
+        doc.setTextColor(0);
+        doc.text(`Costo Total: S/ ${parseFloat(costo_total_proyecto).toLocaleString('es-PE', { minimumFractionDigits: 2 })}`, 20, 73);
+        doc.setFontSize(11);
+        doc.text(`Densidad: ${densidad_usuario} pl/ha`, pageWidth - 20, 73, { align: 'right' });
+
+        // Table
+        const tableData = resumen_anual.map(r => [
+            r.anio === 0 ? 'Año 0 (Instalación)' : `Año ${r.anio}`,
+            `S/ ${parseFloat(r.mano_obra).toLocaleString('es-PE', { minimumFractionDigits: 2 })}`,
+            `S/ ${parseFloat(r.insumos).toLocaleString('es-PE', { minimumFractionDigits: 2 })}`,
+            `S/ ${parseFloat(r.servicios).toLocaleString('es-PE', { minimumFractionDigits: 2 })}`,
+            `S/ ${parseFloat(r.total).toLocaleString('es-PE', { minimumFractionDigits: 2 })}`
+        ]);
+
+        autoTable(doc, {
+            startY: 90,
+            head: [['Año', 'Mano de Obra', 'Insumos', 'Servicios', 'Total']],
+            body: tableData,
+            headStyles: { fillColor: [16, 185, 129] }, // Emerald header
+            theme: 'grid',
+            styles: { fontSize: 10 },
+        });
+
+        // Footer
+        const finalY = doc.lastAutoTable.finalY + 10;
+        doc.setFontSize(8);
+        doc.setTextColor(150);
+        doc.text('Generado por Geovisor v1.2', 14, doc.internal.pageSize.height - 10);
+
+        doc.save(`Presupuesto_${distrito?.nombre || 'Proyecto'}.pdf`);
+    };
 
     return (
         <div className="animate-fade-in">
@@ -114,16 +174,29 @@ export default function ResultsPanel({ results, onClear, onRecalculate, distrito
             </div>
 
             {/* Botones de Acción */}
+            {/* Botones de Acción */}
             <div className="flex flex-col gap-2 mt-4">
-                <button onClick={onRecalculate} className="btn-primary w-full">
-                    📊 Recalcular (mismo polígono)
+                <button
+                    onClick={handleExportPDF}
+                    className="btn-secondary w-full bg-slate-700 hover:bg-slate-600 border-none text-white font-bold py-2 mb-2"
+                >
+                    📄 Exportar Reporte PDF
                 </button>
-                <div className="flex gap-2">
-                    <button onClick={onClear} className="btn-secondary flex-1">
-                        🔄 Nuevo
+
+                <div className="grid grid-cols-2 gap-2">
+                    <button
+                        onClick={onClear}
+                        className="btn-primary flex items-center justify-center gap-1 bg-emerald-600 hover:bg-emerald-500"
+                        title="Modificar parámetros manteniendo el polígono"
+                    >
+                        ✏️ Editar
                     </button>
-                    <button className="btn-secondary flex-1" disabled title="Próximamente">
-                        📄 PDF
+                    <button
+                        onClick={onReset}
+                        className="btn-secondary flex items-center justify-center gap-1 bg-amber-700 hover:bg-amber-600 border-none text-white"
+                        title="Borrar todo y empezar de nuevo"
+                    >
+                        🗑️ Nuevo
                     </button>
                 </div>
             </div>

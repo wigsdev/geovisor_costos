@@ -43,6 +43,7 @@ function App() {
         hectareas: params.hectareas,
         anio_inicio: params.anioInicio ?? 0,
         anio_fin: params.anioFin ?? 20,
+        incluir_servicios: params.incluirServicios ?? true,
         // Parámetros v1.1
         sistema_siembra: params.sistemaSiembra,
         distanciamiento_largo: params.distanciaLargo,
@@ -66,9 +67,16 @@ function App() {
 
   const handleClearResults = () => {
     setResults(null);
-    // No limpiar el polígono para permitir recalcular con nuevos parámetros
-    // setPolygonArea(null);
-    // setHasPolygon(false);
+    // Solo limpia resultados, mantiene inputs y polígono (Modo Editar)
+  };
+
+  const handleResetAll = () => {
+    setResults(null);
+    setPolygonArea(null);
+    setHasPolygon(false);
+    setSelectedDistrito(null);
+    setSelectedCultivo(null);
+    // Limpia todo para empezar desde cero
   };
 
   return (
@@ -84,6 +92,7 @@ function App() {
         setSelectedCultivo={setSelectedCultivo}
         results={results}
         onClearResults={handleClearResults}
+        onResetAll={handleResetAll}
         onRecalculate={handleCalculateWrapper}
         hasPolygon={hasPolygon}
         hectareas={polygonArea}

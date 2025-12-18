@@ -3,7 +3,7 @@
 Sistema web para el cálculo y visualización de costos de establecimiento de plantaciones forestales en Perú.
 
 ![Estado](https://img.shields.io/badge/Estado-En%20Desarrollo-yellow)
-![Versión](https://img.shields.io/badge/Versión-1.0.0-blue)
+![Versión](https://img.shields.io/badge/Versión-1.2.0-blue)
 ![Licencia](https://img.shields.io/badge/Licencia-MIT-green)
 
 ## 📋 Descripción
@@ -13,6 +13,8 @@ Sistema web para el cálculo y visualización de costos de establecimiento de pl
 - 🗺️ Visualización interactiva de límites administrativos (departamentos, provincias, distritos)
 - 📐 Dibujo de polígonos para áreas de plantación
 - 💰 Cálculo automatizado de costos por hectárea y por año
+- 📄 **Exportación de Reportes PDF** profesionales
+- 🤖 **Lógica Inteligente** de asignación de servicios (>10 ha)
 - 🌱 Soporte para múltiples especies forestales
 - 📊 Factores de ajuste (densidad, pendiente)
 
@@ -104,6 +106,8 @@ La documentación completa se encuentra en la carpeta `docs/`:
 
 | Documento | Descripción |
 |-----------|-------------|
+| [MANUAL_USUARIO.md](docs/MANUAL_USUARIO.md) | Guía paso a paso para usuarios finales |
+| [MANUAL_TECNICO.md](docs/MANUAL_TECNICO.md) | Arquitectura y detalles del sistema |
 | [TASK_LIST.md](docs/TASK_LIST.md) | Lista de tareas por fase |
 | [ROADMAP.md](docs/ROADMAP.md) | Roadmap de versiones |
 | [FASES_DESARROLLO.md](docs/FASES_DESARROLLO.md) | Fases del proyecto |

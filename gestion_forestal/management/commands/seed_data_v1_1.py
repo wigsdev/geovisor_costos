@@ -157,8 +157,8 @@ class Command(BaseCommand):
             # Recuperar param mantenimiento de la zona
             param = ParametroMantenimiento.objects.get(region=region)
             
-            # Limpieza (Años 1-3 fuerte, luego baja)
-            for anio in range(1, 4):
+            # Limpieza (Años 2-5 según usuario: "mantenimiento hasta cierre de copas")
+            for anio in range(2, 6): # Años 2, 3, 4, 5
                 PaqueteTecnologico.objects.create(
                     cultivo=cultivo_obj, zona_economica=zona, anio_proyecto=anio,
                     rubro='MANO_OBRA', actividad=f'Mantenimiento y Control Malezas (Año {anio})',
@@ -166,8 +166,8 @@ class Command(BaseCommand):
                     costo_unitario_referencial=0
                 )
             
-            # Poda (Años 3, 5, 7 tipicamente, simplificamos a 1 vez al año desde el 3)
-            for anio in [3, 5, 7]:
+            # Poda (A partir del año 3 hasta el 5)
+            for anio in range(3, 6): # Años 3, 4, 5
                  PaqueteTecnologico.objects.create(
                     cultivo=cultivo_obj, zona_economica=zona, anio_proyecto=anio,
                     rubro='MANO_OBRA', actividad=f'Podas y Manejo (Año {anio})',

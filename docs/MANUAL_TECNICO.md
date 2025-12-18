@@ -8,7 +8,7 @@ El **Geovisor de Costos Forestales** es una aplicación web full-stack diseñada
 ### 2.1 Stack Tecnológico
 - **Backend:** Python + Django (GeoDjango)
 - **Base de Datos:** PostgreSQL + PostGIS Extension
-- **Frontend:** React + Vite + Leaflet
+- **Frontend:** React + Vite + Leaflet + jsPDF
 - **Infraestructura:** Docker + Railway (Producción)
 
 ### 2.2 Diagrama de Componentes
@@ -58,3 +58,17 @@ Fórmula:
 ## 5. Scripts de Mantenimiento
 - `python manage.py seed_data_v1_1`: Carga/Resetea la BD con datos calibrados (20 combinaciones).
 - `python manage.py import_distritos`: Carga el maestro de distritos y geometrías.
+
+## 6. Detalles de Implementación Reciente (v1.2)
+
+### 6.1 Reportes PDF
+- Implementado del lado del cliente usando `jspdf` y `jspdf-autotable`.
+- Evita carga en el backend al generar documentos binarios en el navegador.
+
+### 6.2 Lógica "Smart Services"
+- Automatización en frontend (`Sidebar.jsx`) que activa/desactiva el rubro "Servicios" basándose en el umbral de 10 hectáreas.
+- Backend (`views.py`) filtra dinámicamente los rubros `SERVICIOS`, `LEGAL` y `ACTIVO` según este flag.
+
+### 6.3 Sistema de Diseño
+- Paleta unificada usando variables CSS (`--text-primary`, `--brand-primary`, etc.) en `index.css`.
+- Jerarquía visual estricta: Blanco (Títulos) -> Gris Claro (Datos) -> Gris Medio (Contexto).
