@@ -42,4 +42,4 @@ RUN python manage.py collectstatic --noinput
 # ==================================================
 # Usar Gunicorn como servidor WSGI
 # $PORT es inyectado por Railway automáticamente
-CMD gunicorn backend.wsgi:application --bind 0.0.0.0:$PORT --workers 1 --threads 4 --timeout 120
+CMD sh -c "python manage.py migrate && python manage.py seed_data && python manage.py import_distritos && python manage.py shell -c \"from django.contrib.auth import get_user_model; User = get_user_model(); not User.objects.filter(username='wigusa').exists() and User.objects.create_superuser('wigusa', 'admin@geovisor.com', 'wigusa123')\" && gunicorn backend.wsgi:application --bind 0.0.0.0:$PORT --workers 1 --threads 4 --timeout 120"
