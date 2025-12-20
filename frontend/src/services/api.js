@@ -3,12 +3,12 @@
  * Gestiona las llamadas al backend Django.
  */
 
-import axios from 'axios';
-
 // Base URL del backend Django
-// En producción usa relative path ('/api') para evitar problemas de CORS/Mixed Content
-// En desarrollo, Vite proxy redirige '/api' a localhost:8000
-const API_BASE_URL = import.meta.env.VITE_API_URL || '/api';
+// 1. Usa VITE_API_URL si está definido en Railway.
+// 2. Si no, intenta usar el backend predecible (geovisor-costos-backend.up.railway.app).
+// 3. En desarrollo local, usa '/api' que el proxy de Vite redirige a localhost:8000.
+
+const API_BASE_URL = import.meta.env.VITE_API_URL || (import.meta.env.DEV ? '/api' : 'https://geovisor-costos-backend.up.railway.app/api');
 
 const api = axios.create({
     baseURL: API_BASE_URL,
