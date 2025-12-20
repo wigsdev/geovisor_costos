@@ -13,9 +13,9 @@ Configurar las siguientes variables en producción:
 | `DEBUG` | Modo debug Django | `False` |
 | `SECRET_KEY` | Llave secreta Django | `django-insecure-...` |
 | `DATABASE_URL` | URL de conexión PostgreSQL | `postgresql://user:pass@host:port/db` |
-| `ALLOWED_HOSTS` | Dominios permitidos | `web-production.up.railway.app` |
-| `CSRF_TRUSTED_ORIGINS` | Orígenes confiables | `https://web-production.up.railway.app` |
-| `VITE_API_URL` | URL del API Backend (Frontend) | `https://api-production.up.railway.app` |
+| `ALLOWED_HOSTS` | Dominios permitidos | `geovisorcostos-production.up.railway.app` |
+| `CSRF_TRUSTED_ORIGINS` | Orígenes confiables | `https://geovisor-costos-web.up.railway.app` |
+| `VITE_API_URL` | URL del API Backend (Frontend) | `https://geovisorcostos-production.up.railway.app/api` |
 
 ## 3. Despliegue en Railway
 
