@@ -1,7 +1,4 @@
-/**
- * Servicio API para el Geovisor de Costos Forestales.
- * Gestiona las llamadas al backend Django.
- */
+import axios from 'axios';
 
 // Base URL del backend Django
 // 1. Usa VITE_API_URL si está definido en Railway.
