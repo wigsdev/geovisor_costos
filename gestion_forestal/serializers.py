@@ -208,6 +208,12 @@ class CalculoCostosInputSerializer(serializers.Serializer):
         help_text="Distancia entre hileras (metros). Solo para RECTANGULAR."
     )
     
+    # Flags de lógica de negocio
+    incluir_servicios = serializers.BooleanField(
+        default=True,
+        help_text="Incluir costos de servicios (Gestión y Técnica)"
+    )
+    
     def validate(self, data):
         """
         Valida los datos del request.

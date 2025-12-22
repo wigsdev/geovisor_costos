@@ -46,18 +46,41 @@ Sistema web para calcular costos de establecimiento de plantaciones forestales e
 
 ---
 
-## 💾 Versión 1.3 - Persistencia
-**Estado:** Planificado  
-**Fecha objetivo:** Marzo 2025
+## 🛠️ Versión 1.3 - Flexibilidad y Datos (Próxima)
+**Estado:** Planificado (Prioridad Alta)
+**Objetivo:** Permitir múltiples formas de entrada de datos y enriquecer el análisis.
 
-### Características
-- [ ] Sistema de autenticación
-- [ ] Guardar proyectos
-- [ ] Cargar proyectos guardados
-- [ ] Múltiples polígonos por proyecto
-- [ ] Compartir proyectos
+### 1. Flexibilidad de Entrada (Solicitado)
+- [ ] **Modo Manual (Sin Mapa):**
+    - Opción para ingresar hectáreas manualmente (input numérico).
+    - Selección obligatoria de Ubicación (Dep/Prov/Dist) mediante selectores.
+    - Ideal para cotizaciones rápidas sin geometría.
+- [ ] **Carga de Archivos (Upload):**
+    - Soporte para subir archivos `.geojson`, `.kml`, `.zip` (shapefile).
+    - **Backend:** Detectar automáticamente la ubicación (Distrito) basada en el centroide del polígono subido.
+    - **Frontend:** Visualizar el polígono cargado y autocompletar el formulario.
+
+### 2. Análisis Económico (Recomendado)
+- [ ] **Indicadores Financieros:**
+    - Calcular VAN (Valor Actual Neto) y TIR (Tasa Interna de Retorno).
+    - Proyección de ingresos basada en precio de madera (configurable).
+    - Flujo de Caja simple.
+
+### 3. Mejoras en Reportes
+- [ ] **Mapa en PDF:** Incluir captura de pantalla del polígono en el reporte PDF.
+- [ ] **Desglose de Costos:** Gráficos de pastel (Highcharts/Chart.js) en el reporte.
 
 ---
+
+## 💾 Versión 1.4 - Persistencia y Cuentas
+**Estado:** Planificado
+**Objetivo:** Gestión de usuarios y proyectos.
+
+### Características
+- [ ] Sistema de autenticación (Login/Registro).
+- [ ] Guardar proyectos (Mis Cotizaciones).
+- [ ] Comparador de Escenarios (Ej: Teca vs Pino en el mismo terreno).
+- [ ] Compartir resultados (Link público de solo lectura).
 
 ## 🌐 Versión 2.0 - Producción
 **Estado:** Planificado  

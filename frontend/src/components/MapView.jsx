@@ -39,6 +39,34 @@ if (L.Draw && L.Draw.Polyline) {
     };
 }
 
+// Fix para mostrar medidas en tiempo real dentro del tooltip nativo (Cursor)
+// Sobrescribimos _onMouseMove solo para Polígonos para inyectar la distancia
+if (L.Draw && L.Draw.Polygon) {
+    const originalPolygonMouseMove = L.Draw.Polygon.prototype._onMouseMove || L.Draw.Polyline.prototype._onMouseMove;
+    L.Draw.Polygon.prototype._onMouseMove = function (e) {
+        // Ejecutar lógica original (dibujar línea guía)
+        originalPolygonMouseMove.call(this, e);
+
+        // Nuestra lógica personalizada: Calcular distancia al cursor
+        if (this._markers && this._markers.length > 0) {
+            const lastMarker = this._markers[this._markers.length - 1];
+            const dist = this._map.distance(lastMarker.getLatLng(), e.latlng);
+
+            const distLabel = dist > 1000
+                ? (dist / 1000).toFixed(2) + ' km'
+                : Math.round(dist) + ' m';
+
+            // Actualizar el tooltip con la medida
+            if (this._tooltip) {
+                this._tooltip.updateContent({
+                    text: this._getTooltipText().text, // Mantiene el texto original ("Click to continue...")
+                    subtext: distLabel // Solo la medida limpia, sin prefijo ni color especial
+                });
+            }
+        }
+    };
+}
+
 // Fix para iconos de Leaflet en Vite
 import icon from 'leaflet/dist/images/marker-icon.png';
 import iconShadow from 'leaflet/dist/images/marker-shadow.png';
@@ -245,6 +273,8 @@ function DrawControl({ onPolygonCreated, canDraw }) {
                 polygon: {
                     allowIntersection: false,
                     showArea: true,
+                    showLength: false, // Desactivado para evitar duplicidad con etiquetas personalizadas
+                    metric: true,
                     shapeOptions: {
                         color: '#10b981',
                         weight: 3,
@@ -288,6 +318,15 @@ function DrawControl({ onPolygonCreated, canDraw }) {
             // Convertir a hectáreas y redondear a 2 decimales (Backend exige max 2 decimales)
             let areaHa = areaM2 / 10000;
             areaHa = Math.round(areaHa * 100) / 100;
+
+            // Etiqueta permanente en el centro
+            const center = layer.getBounds().getCenter();
+            layer.bindTooltip(`<b>Area: ${areaHa} ha</b>`, {
+                permanent: true,
+                direction: 'center',
+                className: 'area-tooltip'
+            }).openTooltip();
+
             onPolygonCreated(areaHa, layer);
         };
 
@@ -295,12 +334,95 @@ function DrawControl({ onPolygonCreated, canDraw }) {
             onPolygonCreated(null, null);
         };
 
+        // Hook para Click Derecho -> Borrar último vértice
+        // Capturamos el handler activo cuando inicia el dibujo
+        let currentDrawHandler = null;
+
+        const onDrawStart = (e) => {
+            currentDrawHandler = e.layerType === 'polygon' ? drawControl._toolbars.draw._modes.polygon.handler : null;
+        };
+
+        const onContextMenu = (e) => {
+            if (currentDrawHandler && currentDrawHandler._markers) {
+                // Si hay marcadores (vértices), borrar el último
+                currentDrawHandler.deleteLastVertex();
+                // Eliminar también la última etiqueta temporal si existe
+                const layers = featureGroup.getLayers();
+                if (layers.length > 0) {
+                    // Simplificación: borrar todas las etiquetas temporales y redibujarlas sería mejor,
+                    // pero por ahora limpiamos la última añadida (que debería ser la del último segmento)
+                    // featureGroup.removeLayer(layers[layers.length - 1]);
+
+                    // Mejor estrategia: Limpiar todo y dejar que onDrawVertex redibuje si fuera necesario
+                    // Pero deleteLastVertex no dispara eventos fáciles.
+                    // Aceptamos que al borrar vértice la etiqueta quede "huerfana" 
+                    // hasta que se termine o cancele, o limpiamos todo el grupo temporal.
+                }
+            }
+        };
+
+        // Medir segmento en tiempo real al hacer click
+        const onDrawVertex = (e) => {
+            // Ya no añadimos etiquetas temporales al mapa
+            // Solo dejamos que el tooltip nativo guíe al usuario
+        };
+
+        // Limpiar etiquetas temporales si se cancela
+        const onDrawStop = () => {
+            // Timeout para limpieza general
+            setTimeout(() => {
+                if (currentDrawHandler && !currentDrawHandler._enabled) {
+                    const hasPolygon = featureGroup.getLayers().some(l => l instanceof L.Polygon);
+                    if (!hasPolygon) {
+                        featureGroup.clearLayers();
+                    }
+                }
+            }, 200);
+        };
+
         map.on(L.Draw.Event.CREATED, onCreated);
         map.on(L.Draw.Event.DELETED, onDeleted);
+        map.on('draw:drawstart', onDrawStart);
+        map.on('draw:drawvertex', onDrawVertex); // Nuevo evento
+        map.on('draw:drawstop', onDrawStop); // Actualizado
+        map.on('contextmenu', onContextMenu);
+
+        // Estilos CSS inyectados para las etiquetas
+        const style = document.createElement('style');
+        style.innerHTML = `
+            .area-tooltip {
+                background: rgba(0,0,0,0.7);
+                border: none;
+                color: #fff;
+                font-weight: bold;
+                font-size: 14px;
+                border-radius: 4px;
+            }
+            .segment-tooltip {
+                background: rgba(255,255,255,0.8);
+                border: 1px solid #ccc;
+                color: #333;
+                font-size: 11px;
+                padding: 1px 4px;
+            }
+            .segment-tooltip.dynamic {
+                background: rgba(255,255,200, 0.9);
+                border: 1px solid #eab308;
+            }
+            .d-none { display: none; }
+            .leaflet-draw-tooltip-subtext b {
+                color: #fde047; /* Amarillo para resaltar la medida en el tooltip gris */
+            }
+        `;
+        document.head.appendChild(style);
 
         return () => {
             map.off(L.Draw.Event.CREATED, onCreated);
             map.off(L.Draw.Event.DELETED, onDeleted);
+            map.off('draw:drawstart', onDrawStart);
+            map.off('draw:drawvertex', onDrawVertex);
+            map.off('draw:drawstop', onDrawStop);
+            map.off('contextmenu', onContextMenu);
             if (drawControlRef.current) {
                 map.removeControl(drawControlRef.current);
                 drawControlRef.current = null;
