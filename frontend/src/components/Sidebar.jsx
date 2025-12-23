@@ -34,8 +34,15 @@ export default function Sidebar({
     onClearResults,
     onResetAll,
     onRecalculate,
+
+    // Props de Modo (v1.3)
+    inputMode,
+    setInputMode,
+    manualHectares,
+    setManualHectares,
+
     hasPolygon,
-    hectareas,
+    polygonArea, // Area del mapa (para visualizar)
     isLoading
 }) {
     const [allDistritos, setAllDistritos] = useState([]);
@@ -161,16 +168,15 @@ export default function Sidebar({
         setTimeout(() => cultivoRef.current?.focus(), 100);
     };
 
-
-
-    // Efecto: Smart Default para Servicios según Hectáreas
+    // Efecto: Smart Default para Servicios según Hectáreas Activas
     // < 10 ha: Servicios desactivados (Pequeño productor)
     // >= 10 ha: Servicios activados (Mediano/Grande)
     useEffect(() => {
-        if (hectareas !== null && hectareas !== undefined) {
-            setIncluirServicios(hectareas >= 10);
+        const hec = inputMode === 'map' ? polygonArea : parseFloat(manualHectares);
+        if (hec !== null && hec !== undefined && !isNaN(hec)) {
+            setIncluirServicios(hec >= 10);
         }
-    }, [hectareas]);
+    }, [polygonArea, manualHectares, inputMode]);
 
     // Manejar cambio de cultivo
     const handleCultivoChange = (e) => {
@@ -182,10 +188,18 @@ export default function Sidebar({
     const handleRecalculateClick = () => {
         if (!selectedDistrito || !selectedCultivo) return;
 
+        // Validar antes de enviar
+        const hasMapArea = inputMode === 'map' && hasPolygon;
+        const hasManualArea = inputMode === 'manual' && manualHectares && parseFloat(manualHectares) > 0;
+
+        if (!hasMapArea && !hasManualArea) {
+            return; // Disabled button should prevent this, but just in case
+        }
+
         onRecalculate({
             distritoId: selectedDistrito.cod_ubigeo,
             cultivoId: selectedCultivo.id,
-            hectareas: hectareas,
+            hectareas: null, // App.jsx lo resolverá usando el state
             sistemaSiembra,
             distanciaLargo,
             distanciaAncho: sistemaSiembra === 'RECTANGULAR' ? distanciaAncho : null,
@@ -196,6 +210,14 @@ export default function Sidebar({
             incluirServicios
         });
     };
+
+    // Helper para determinar si el botón calcular está habilitado
+    const canCalculate = useMemo(() => {
+        if (!selectedDistrito || !selectedCultivo) return false;
+        if (inputMode === 'map') return hasPolygon;
+        if (inputMode === 'manual') return manualHectares && parseFloat(manualHectares) > 0;
+        return false;
+    }, [selectedDistrito, selectedCultivo, inputMode, hasPolygon, manualHectares]);
 
     if (loading) {
         return (
@@ -223,17 +245,81 @@ export default function Sidebar({
                         results={results}
                         onClear={onClearResults}
                         onReset={onResetAll}
-                        onRecalculate={handleRecalculateClick} // Pasamos la nueva funcion wrapper
+                        onRecalculate={handleRecalculateClick}
                         distrito={selectedDistrito}
                         cultivo={selectedCultivo}
-                        hectareas={hectareas}
+                        hectareas={inputMode === 'map' ? polygonArea : parseFloat(manualHectares)}
                     />
                 ) : (
                     <>
-                        {/* Sección de Contexto */}
-                        <div className="mb-6">
+                        {/* 1. MODO DE ENTRADA (Tabs) */}
+                        {/* 1. MODO DE ENTRADA (Tabs) */}
+                        <div className="toggle-container">
+                            <button
+                                onClick={() => setInputMode('map')}
+                                className={`toggle-btn ${inputMode === 'map' ? 'active' : ''}`}
+                            >
+                                <span className="mr-2">📍</span> Mapa
+                            </button>
+                            <button
+                                onClick={() => setInputMode('manual')}
+                                className={`toggle-btn ${inputMode === 'manual' ? 'active' : ''}`}
+                            >
+                                <span className="mr-2">📝</span> Manual
+                            </button>
+                        </div>
+
+                        {/* 2. AREA INPUT (Condicional) */}
+                        <div className="mb-6 animate-fade-in">
                             <h3 className="text-sm font-semibold text-slate-400 uppercase tracking-wide mb-3">
-                                📍 Ubicación
+                                📏 Área de Plantación
+                            </h3>
+
+                            {inputMode === 'map' ? (
+                                /* MODO MAPA */
+                                hasPolygon ? (
+                                    <div className="bg-emerald-900/30 border border-emerald-500/50 p-4 rounded text-center">
+                                        <div className="text-3xl font-bold text-emerald-400">{polygonArea}</div>
+                                        <div className="text-sm text-emerald-200 uppercase tracking-wider">Hectáreas</div>
+                                        <p className="text-xs text-emerald-500/70 mt-1">Calculado del mapa</p>
+                                    </div>
+                                ) : (
+                                    <div className="instruction-box">
+                                        <p className="text-slate-300">
+                                            Use la herramienta <strong>polígono</strong> 🔷 en el mapa para dibujar su área.
+                                        </p>
+                                    </div>
+                                )
+                            ) : (
+                                /* MODO MANUAL */
+                                <div className="bg-slate-800 p-4 rounded border border-slate-700">
+                                    <label className="form-label text-emerald-400">Ingrese Hectáreas</label>
+                                    <div className="relative">
+                                        <input
+                                            type="number"
+                                            min="0.1"
+                                            step="0.1"
+                                            placeholder="Ej: 10.5"
+                                            value={manualHectares}
+                                            onChange={(e) => setManualHectares(e.target.value)}
+                                            className="form-input w-full bg-slate-900 text-white rounded p-3 text-lg font-bold border border-slate-600 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500"
+                                            autoFocus
+                                        />
+                                        <div className="absolute right-3 top-3.5 text-slate-500 font-bold text-sm pointer-events-none">
+                                            HA
+                                        </div>
+                                    </div>
+                                    <p className="text-xs text-slate-500 mt-2">
+                                        Ingrese el tamaño total del área a reforestar.
+                                    </p>
+                                </div>
+                            )}
+                        </div>
+
+                        {/* 3. UBICACIÓN (Contexto) */}
+                        <div className="mb-6 border-t border-slate-700 pt-6">
+                            <h3 className="text-sm font-semibold text-slate-400 uppercase tracking-wide mb-3">
+                                📍 Ubicación del Predio
                             </h3>
 
                             {/* Selector de Departamento */}
@@ -288,7 +374,7 @@ export default function Sidebar({
                             </div>
                         </div>
 
-                        {/* Sección de Cultivo */}
+                        {/* 4. CULTIVO */}
                         <div className="mb-6">
                             <h3 className="text-sm font-semibold text-slate-400 uppercase tracking-wide mb-3 border-t border-slate-700 pt-4">
                                 🌱 Configuración de Cultivo
@@ -422,37 +508,30 @@ export default function Sidebar({
                                     <div className="pt-4 mt-2">
                                         <button
                                             onClick={handleRecalculateClick}
-                                            disabled={!hasPolygon || isLoading}
-                                            className={`w-full py-3 px-4 rounded font-bold shadow-lg transition-all ${hasPolygon
+                                            disabled={!canCalculate || isLoading}
+                                            className={`w-full py-3 px-4 rounded font-bold shadow-lg transition-all ${canCalculate
                                                 ? 'bg-emerald-600 hover:bg-emerald-500 text-white transform hover:scale-[1.02]'
                                                 : 'bg-slate-700 text-slate-400 cursor-not-allowed'
                                                 }`}
                                         >
                                             {isLoading ? '⏳ Calculando...' : '🧮 Calcular Costos'}
                                         </button>
-                                        {!hasPolygon && (
+
+                                        {/* Mensajes de Validación */}
+                                        {!canCalculate && inputMode === 'map' && !hasPolygon && (
                                             <p className="text-xs text-center text-amber-500 mt-2">
-                                                ⚠️ Dibuja un polígono en el mapa para activar
+                                                ⚠️ Dibuja un polígono para continuar
+                                            </p>
+                                        )}
+                                        {!canCalculate && inputMode === 'manual' && (!manualHectares || manualHectares <= 0) && (
+                                            <p className="text-xs text-center text-amber-500 mt-2">
+                                                ⚠️ Ingrese un valor de hectáreas válido
                                             </p>
                                         )}
                                     </div>
                                 </div>
                             )}
                         </div>
-
-                        {/* Instrucciones (Solo si no hay polígono) */}
-                        {!hasPolygon && (
-                            <div className="mb-6 animate-fade-in">
-                                <h3 className="text-sm font-semibold text-slate-400 uppercase tracking-wide mb-3">
-                                    📐 Área de Plantación
-                                </h3>
-                                <div className="instruction-box">
-                                    <p className="text-slate-300">
-                                        Use la herramienta <strong>polígono</strong> 🔷 en el mapa para dibujar su área de plantación.
-                                    </p>
-                                </div>
-                            </div>
-                        )}
 
                         {/* Info del distrito */}
                         {selectedDistrito && (
@@ -471,7 +550,7 @@ export default function Sidebar({
             </div>
 
             <div className="absolute bottom-0 w-80 bg-gray-900 border-t border-gray-700 p-2 text-center text-xs text-gray-500">
-                v1.1 - Geovisor Costos Forestales
+                v1.3 - Geovisor Costos Forestales
             </div>
         </div >
     );

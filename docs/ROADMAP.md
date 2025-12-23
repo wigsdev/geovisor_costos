@@ -43,18 +43,28 @@ Sistema web para calcular costos de establecimiento de plantaciones forestales e
 - ✅ Sistema de Diseño y Paleta de Colores
 - ✅ Flujo de edición mejorado (Editar vs Nuevo)
 
+---
+
+## 🎨 Versión 1.2.1 - Refinamiento UX (Actual)
+**Estado:** Completado ✅
+**Fecha:** Diciembre 2024
+
+### Características
+- ✅ **Tooltips Nativos del Navegador:** Medición en tiempo real integrada en el cursor.
+- ✅ **Limpieza Visual:** Eliminación de etiquetas intrusivas en el mapa.
+- ✅ **Click Derecho:** Función para borrar el último vértice al dibujar.
 
 ---
 
-## 🛠️ Versión 1.3 - Flexibilidad y Datos (Próxima)
-**Estado:** Planificado (Prioridad Alta)
+## 🛠️ Versión 1.3 - Flexibilidad y Datos (En Desarrollo)
+**Estado:** En Progreso 🚧
 **Objetivo:** Permitir múltiples formas de entrada de datos y enriquecer el análisis.
 
 ### 1. Flexibilidad de Entrada (Solicitado)
-- [ ] **Modo Manual (Sin Mapa):**
-    - Opción para ingresar hectáreas manualmente (input numérico).
-    - Selección obligatoria de Ubicación (Dep/Prov/Dist) mediante selectores.
-    - Ideal para cotizaciones rápidas sin geometría.
+- [x] **Modo Manual (Sin Mapa):**
+    - ✅ Opción para ingresar hectáreas manualmente (input numérico).
+    - ✅ Toggle "Mapa / Manual" en sidebar.
+    - ✅ Desactivación de herramientas de dibujo en modo manual.
 - [ ] **Carga de Archivos (Upload):**
     - Soporte para subir archivos `.geojson`, `.kml`, `.zip` (shapefile).
     - **Backend:** Detectar automáticamente la ubicación (Distrito) basada en el centroide del polígono subido.

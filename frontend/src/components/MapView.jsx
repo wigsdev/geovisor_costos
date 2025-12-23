@@ -446,10 +446,11 @@ export default function MapView({
     selectedDepartamento,
     selectedProvincia,
     selectedDistrito,
-    selectedCultivo
+    selectedCultivo,
+    canDraw // Prop recibida de App.jsx (inputMode === 'map')
 }) {
-    // Determinar si puede dibujar (tiene distrito y cultivo seleccionados)
-    const canDraw = Boolean(selectedDistrito && selectedCultivo);
+    // Determinar si tiene contexto para dibujar (distrito y cultivo seleccionados)
+    const hasContext = Boolean(selectedDistrito && selectedCultivo);
 
     return (
         <div className="map-container">
@@ -478,11 +479,13 @@ export default function MapView({
                     selectedDistrito={selectedDistrito}
                 />
 
-                {/* Control de dibujo */}
-                <DrawControl
-                    onPolygonCreated={onPolygonCreated}
-                    canDraw={canDraw}
-                />
+                {/* Control de dibujo: Solo mostrar si está en Modo Mapa (canDraw) */}
+                {canDraw && (
+                    <DrawControl
+                        onPolygonCreated={onPolygonCreated}
+                        canDraw={hasContext} // Controla la validación de dependencias (Distrito/Cultivo)
+                    />
+                )}
             </MapContainer>
         </div>
     );

@@ -16,8 +16,11 @@ function App() {
   const [selectedCultivo, setSelectedCultivo] = useState(null);
 
   // Estados de la aplicación
+  const [inputMode, setInputMode] = useState('map'); // 'map' | 'manual'
+  const [manualHectares, setManualHectares] = useState(''); // Input manual
   const [polygonArea, setPolygonArea] = useState(null);
   const [hasPolygon, setHasPolygon] = useState(false);
+
   // Modal eliminado: ahora todo se controla desde el Sidebar
   const [isLoading, setIsLoading] = useState(false);
   const [results, setResults] = useState(null);
@@ -30,17 +33,29 @@ function App() {
     }
     setPolygonArea(areaHa);
     setHasPolygon(true);
-    // Ya no abrimos modal, el usuario ve el sidebar actualizado
-  }, []);
+    // Auto-switch a modo mapa si dibuja
+    if (inputMode !== 'map') setInputMode('map');
+  }, [inputMode]);
 
   // Calcular / Recalcular costos
   const handleCalculateWrapper = async (params) => {
     try {
       setIsLoading(true);
+
+      // Determinar fuente de hectáreas
+      const hectareasFinal = inputMode === 'map' ? polygonArea : parseFloat(manualHectares);
+
+      // Validación simple
+      if (!hectareasFinal || hectareasFinal <= 0) {
+        alert('Por favor ingrese un número de hectáreas válido o dibuje un polígono.');
+        setIsLoading(false);
+        return;
+      }
+
       const payload = {
         distrito_id: params.distritoId,
         cultivo_id: params.cultivoId,
-        hectareas: params.hectareas,
+        hectareas: hectareasFinal,
         anio_inicio: params.anioInicio ?? 0,
         anio_fin: params.anioFin ?? 20,
         incluir_servicios: params.incluirServicios ?? true,
@@ -74,6 +89,8 @@ function App() {
     setResults(null);
     setPolygonArea(null);
     setHasPolygon(false);
+    setInputMode('map');
+    setManualHectares('');
     setSelectedDistrito(null);
     setSelectedCultivo(null);
     // Limpia todo para empezar desde cero
@@ -94,8 +111,15 @@ function App() {
         onClearResults={handleClearResults}
         onResetAll={handleResetAll}
         onRecalculate={handleCalculateWrapper}
+
+        // Props de Modo 
+        inputMode={inputMode}
+        setInputMode={setInputMode}
+        manualHectares={manualHectares}
+        setManualHectares={setManualHectares}
+
         hasPolygon={hasPolygon}
-        hectareas={polygonArea}
+        polygonArea={polygonArea} // Pasamos explícitamente el del mapa para display
         isLoading={isLoading}
       />
 
@@ -105,6 +129,7 @@ function App() {
         selectedProvincia={selectedProvincia}
         selectedDistrito={selectedDistrito}
         selectedCultivo={selectedCultivo}
+        canDraw={inputMode === 'map'} // Desactivar dibujo si está en manual
       />
     </div>
   );
