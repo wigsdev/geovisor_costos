@@ -10,7 +10,10 @@
 
 import { useState, useEffect, useMemo, useRef } from 'react';
 import ResultsPanel from './ResultsPanel';
-import { getDistritos, getCultivos } from '../services/api';
+import { getDistritos, getCultivos, detectDistrito } from '../services/api';
+// Librerías para parsing de archivos
+import shp from 'shpjs';
+import toGeoJSON from '@mapbox/togeojson';
 
 // Datos de respaldo si la API no responde
 const DISTRITOS_FALLBACK = [
@@ -43,11 +46,16 @@ export default function Sidebar({
 
     hasPolygon,
     polygonArea, // Area del mapa (para visualizar)
-    isLoading
+    isLoading,
+    onExternalPolygonLoaded, // Callback para App.jsx
+    showToast // Nuevo prop
 }) {
     const [allDistritos, setAllDistritos] = useState([]);
     const [cultivos, setCultivos] = useState([]);
     const [loading, setLoading] = useState(true);
+    // Estado para Drag & Drop
+    const [isDragging, setIsDragging] = useState(false);
+    const [isParsing, setIsParsing] = useState(false);
 
     // State para inputs de configuración de siembra
     const [sistemaSiembra, setSistemaSiembra] = useState('CUADRADO');
@@ -138,15 +146,22 @@ export default function Sidebar({
             .sort((a, b) => a.nombre.localeCompare(b.nombre));
     }, [allDistritos, selectedDepartamento, selectedProvincia]);
 
+    // Ref para evitar reset de selectores durante auto-detección
+    const isAutoSelecting = useRef(false);
+
     // Cuando cambia el departamento, resetear provincia y distrito (sin auto-seleccionar)
     useEffect(() => {
-        setSelectedProvincia('');
-        setSelectedDistrito(null);
-    }, [selectedDepartamento, setSelectedDistrito]);
+        if (!isAutoSelecting.current) {
+            setSelectedProvincia('');
+            setSelectedDistrito(null);
+        }
+    }, [selectedDepartamento, setSelectedDistrito, setSelectedProvincia]);
 
     // Cuando cambia la provincia, resetear distrito (sin auto-seleccionar)
     useEffect(() => {
-        setSelectedDistrito(null);
+        if (!isAutoSelecting.current) {
+            setSelectedDistrito(null);
+        }
     }, [selectedProvincia, setSelectedDistrito]);
 
     // Manejar cambio de departamento - auto-focus a provincia
@@ -230,6 +245,156 @@ export default function Sidebar({
         );
     }
 
+    // ==========================================
+    // MANEJO DE ARCHIVOS (KML/SHP/GEOJSON)
+    // ==========================================
+
+    const handleDragOver = (e) => {
+        e.preventDefault();
+        setIsDragging(true);
+    };
+
+    const handleDragLeave = (e) => {
+        e.preventDefault();
+        setIsDragging(false);
+    };
+
+    const handleDrop = async (e) => {
+        e.preventDefault();
+        setIsDragging(false);
+        const files = e.dataTransfer.files;
+        if (files.length > 0) {
+            await handleFileUpload(files[0]);
+        }
+    };
+
+
+
+    const handleFileUpload = async (file) => {
+        setIsParsing(true);
+        try {
+            let geojson = null;
+            const fileName = file.name.toLowerCase();
+
+            if (fileName.endsWith('.zip')) {
+                // Shapefile (requiere ArrayBuffer)
+                const buffer = await file.arrayBuffer();
+                geojson = await shp(buffer);
+            }
+            else if (fileName.endsWith('.kml')) {
+                // KML (XML String)
+                const text = await file.text();
+                const parser = new DOMParser();
+                const kml = parser.parseFromString(text, 'text/xml');
+                geojson = toGeoJSON.kml(kml);
+            }
+            else if (fileName.endsWith('.geojson') || fileName.endsWith('.json')) {
+                // GeoJSON (JSON)
+                const text = await file.text();
+                geojson = JSON.parse(text);
+            }
+            else {
+                showToast('Formato no soportado. Use .zip (Shapefile), .kml o .geojson', 'error');
+                setIsParsing(false);
+                return;
+            }
+
+            // Validar que sea un polígono válido
+            if (!geojson || (!geojson.features && !geojson.geometry)) {
+                throw new Error('No se encontraron geometrías válidas.');
+            }
+
+            // Normalizar a FeatureCollection si es Feature solo o Geometria sola
+            // ... (simplificación: asumiendo FeatureCollection std o array de shp)
+            if (Array.isArray(geojson)) geojson = geojson[0]; // shpjs a veces devuelve array
+
+            // Extraer primera geometría (Polygon/MultiPolygon)
+            const feature = geojson.features ? geojson.features.find(f =>
+                f.geometry.type === 'Polygon' || f.geometry.type === 'MultiPolygon'
+            ) : (geojson.type === 'Feature' ? geojson : null);
+
+            if (!feature) {
+                showToast('No se encontró ningún polígono en el archivo.', 'error');
+                setIsParsing(false);
+                return;
+            }
+
+            const finalGeoJSON = {
+                type: 'FeatureCollection',
+                features: [feature]
+            };
+
+            // Detectar Distrito (Smart Location)
+            // Detectar Distrito (Smart Location)
+            // Extraer el primer punto válido del polígono
+            const getFirstCoordinate = (coords) => {
+                if (!Array.isArray(coords)) return null;
+                if (coords.length >= 2 && typeof coords[0] === 'number' && typeof coords[1] === 'number') {
+                    return coords;
+                }
+                if (Array.isArray(coords[0])) {
+                    return getFirstCoordinate(coords[0]);
+                }
+                return null;
+            };
+
+            const firstPoint = getFirstCoordinate(feature.geometry.coordinates);
+            if (!firstPoint) {
+                console.warn("No se pudieron extraer coordenadas del polígono");
+                // Cargar sin detección
+                onExternalPolygonLoaded(finalGeoJSON, null);
+                setIsParsing(false);
+                return;
+            }
+
+            const [lng, lat] = firstPoint;
+            console.log('Detectando distrito para:', lat, lng);
+
+            try {
+                const detected = await detectDistrito(lat, lng);
+                if (detected) {
+                    const distObj = allDistritos.find(d => d.cod_ubigeo === detected.cod_ubigeo);
+                    if (distObj) {
+                        console.log(`Distrito detectado: ${distObj.nombre}, ${distObj.provincia}`);
+
+                        // Notificar a App.jsx CON el distrito detectado
+                        onExternalPolygonLoaded(finalGeoJSON, distObj.cod_ubigeo);
+
+                        // Activar bandera para bloquear resets automáticos
+                        isAutoSelecting.current = true;
+
+                        // Actualizar UI en cascada
+                        // Al usar useMemo, las listas de provincias/distritos se calculan al vuelo 
+                        // basándose en los nuevos valores, así que podemos setear todo junto.
+                        setSelectedDepartamento(distObj.departamento);
+                        setSelectedProvincia(distObj.provincia);
+                        setSelectedDistrito(distObj);
+
+                        showToast(`Ubicación detectada: ${distObj.nombre}, ${distObj.provincia}`, 'success');
+
+                        // Liberar bandera después de un ciclo de render
+                        setTimeout(() => {
+                            isAutoSelecting.current = false;
+                        }, 500);
+
+                    } else {
+                        console.warn("Distrito detectado pero no encontrado localmente.");
+                        onExternalPolygonLoaded(finalGeoJSON, null);
+                    }
+                } else {
+                    onExternalPolygonLoaded(finalGeoJSON, null);
+                }
+            } catch (err) {
+                console.warn('Auto-detección falló', err);
+                onExternalPolygonLoaded(finalGeoJSON, null);
+            }
+        } catch (error) {
+            console.error(error);
+            showToast('Error al leer el archivo: ' + error.message, 'error');
+        } finally {
+            setIsParsing(false);
+        }
+    };
     return (
         <div className="sidebar">
             {/* Header */}
@@ -253,8 +418,7 @@ export default function Sidebar({
                 ) : (
                     <>
                         {/* 1. MODO DE ENTRADA (Tabs) */}
-                        {/* 1. MODO DE ENTRADA (Tabs) */}
-                        <div className="toggle-container">
+                        <div className="toggle-container mb-6">
                             <button
                                 onClick={() => setInputMode('map')}
                                 className={`toggle-btn ${inputMode === 'map' ? 'active' : ''}`}
@@ -269,52 +433,84 @@ export default function Sidebar({
                             </button>
                         </div>
 
-                        {/* 2. AREA INPUT (Condicional) */}
-                        <div className="mb-6 animate-fade-in">
-                            <h3 className="text-sm font-semibold text-slate-400 uppercase tracking-wide mb-3">
-                                📏 Área de Plantación
-                            </h3>
+                        {/* Hidden Input for File Upload (Moved outside dropzone to prevent double-click) */}
+                        <input
+                            type="file"
+                            id="file-upload"
+                            className="hidden"
+                            accept=".kml,.zip,.json,.geojson"
+                            onChange={(e) => e.target.files?.[0] && handleFileUpload(e.target.files[0])}
+                        />
 
-                            {inputMode === 'map' ? (
-                                /* MODO MAPA */
-                                hasPolygon ? (
-                                    <div className="bg-emerald-900/30 border border-emerald-500/50 p-4 rounded text-center">
-                                        <div className="text-3xl font-bold text-emerald-400">{polygonArea}</div>
-                                        <div className="text-sm text-emerald-200 uppercase tracking-wider">Hectáreas</div>
-                                        <p className="text-xs text-emerald-500/70 mt-1">Calculado del mapa</p>
+                        {/* AREA INPUT / DROPZONE */}
+                        {inputMode === 'map' ? (
+                            hasPolygon ? (
+                                <div className="bg-emerald-900/30 p-4 rounded border border-emerald-500/50 mb-6 animate-pulse-slow">
+                                    <div className="flex justify-between items-center mb-1">
+                                        <span className="text-emerald-400 font-medium">Área Definida</span>
+                                        <span className="bg-emerald-500 text-white text-xs px-2 py-0.5 rounded-full">OK</span>
                                     </div>
-                                ) : (
-                                    <div className="instruction-box">
-                                        <p className="text-slate-300">
-                                            Use la herramienta <strong>polígono</strong> 🔷 en el mapa para dibujar su área.
-                                        </p>
+                                    <div className="text-2xl font-bold text-white tracking-wide">
+                                        {polygonArea} <span className="text-sm font-normal text-emerald-300">ha</span>
                                     </div>
-                                )
-                            ) : (
-                                /* MODO MANUAL */
-                                <div className="bg-slate-800 p-4 rounded border border-slate-700">
-                                    <label className="form-label text-emerald-400">Ingrese Hectáreas</label>
-                                    <div className="relative">
-                                        <input
-                                            type="number"
-                                            min="0.1"
-                                            step="0.1"
-                                            placeholder="Ej: 10.5"
-                                            value={manualHectares}
-                                            onChange={(e) => setManualHectares(e.target.value)}
-                                            className="form-input w-full bg-slate-900 text-white rounded p-3 text-lg font-bold border border-slate-600 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500"
-                                            autoFocus
-                                        />
-                                        <div className="absolute right-3 top-3.5 text-slate-500 font-bold text-sm pointer-events-none">
-                                            HA
-                                        </div>
+                                    <div className="text-xs text-emerald-400 mt-1 opacity-80">
+                                        Polígono activo en mapa
                                     </div>
-                                    <p className="text-xs text-slate-500 mt-2">
-                                        Ingrese el tamaño total del área a reforestar.
-                                    </p>
                                 </div>
-                            )}
-                        </div>
+                            ) : (
+                                <div
+                                    className={`p-6 rounded border-2 border-dashed mb-6 transition-all text-center cursor-pointer
+                                ${isDragging
+                                            ? 'border-emerald-400 bg-emerald-900/20 scale-105'
+                                            : 'border-slate-700 bg-slate-800/50 hover:border-slate-500'
+                                        }
+                            `}
+                                    onDragOver={handleDragOver}
+                                    onDragLeave={handleDragLeave}
+                                    onDrop={handleDrop}
+                                    onClick={() => document.getElementById('file-upload').click()}
+                                >
+                                    {isParsing ? (
+                                        <div className="text-emerald-400 animate-pulse">
+                                            <span className="block text-2xl mb-2">⚙️</span>
+                                            Procesando archivo...
+                                        </div>
+                                    ) : (
+                                        <>
+                                            <div className="text-4xl mb-3 opacity-50">📂</div>
+                                            <h3 className="text-slate-200 font-bold mb-1">Dibuja o Arrastra</h3>
+                                            <p className="text-xs text-slate-400 leading-relaxed">
+                                                Use las herramientas de dibujo <br />
+                                                o suba un archivo (KML, Zip/Shp)
+                                            </p>
+                                        </>
+                                    )}
+                                </div>
+                            )
+                        ) : (
+                            /* MODO MANUAL */
+                            <div className="bg-slate-800 p-4 rounded border border-slate-700">
+                                <label className="form-label text-emerald-400">Ingrese Hectáreas</label>
+                                <div className="relative">
+                                    <input
+                                        type="number"
+                                        min="0.1"
+                                        step="0.1"
+                                        placeholder="Ej: 10.5"
+                                        value={manualHectares}
+                                        onChange={(e) => setManualHectares(e.target.value)}
+                                        className="form-input w-full bg-slate-900 text-white rounded p-3 text-lg font-bold border border-slate-600 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500"
+                                        autoFocus
+                                    />
+                                    <div className="absolute right-3 top-3.5 text-slate-500 font-bold text-sm pointer-events-none">
+                                        HA
+                                    </div>
+                                </div>
+                                <p className="text-xs text-slate-500 mt-2">
+                                    Ingrese el tamaño total del área a reforestar.
+                                </p>
+                            </div>
+                        )}
 
                         {/* 3. UBICACIÓN (Contexto) */}
                         <div className="mb-6 border-t border-slate-700 pt-6">

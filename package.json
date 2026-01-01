@@ -1,0 +1,6 @@
+{
+  "dependencies": {
+    "@mapbox/togeojson": "^0.16.2",
+    "shpjs": "^6.2.0"
+  }
+}

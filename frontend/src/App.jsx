@@ -2,9 +2,10 @@
  * App.jsx - Componente principal del Geovisor de Costos Forestales
  */
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import Sidebar from './components/Sidebar';
 import MapView from './components/MapView';
+import Notification from './components/Notification';
 import { calcularCostos } from './services/api';
 import './index.css';
 
@@ -18,17 +19,42 @@ function App() {
   // Estados de la aplicación
   const [inputMode, setInputMode] = useState('map'); // 'map' | 'manual'
   const [manualHectares, setManualHectares] = useState(''); // Input manual
+  const [uploadedGeoJSON, setUploadedGeoJSON] = useState(null); // Nuevo estado para archivos cargados
   const [polygonArea, setPolygonArea] = useState(null);
   const [hasPolygon, setHasPolygon] = useState(false);
 
-  // Modal eliminado: ahora todo se controla desde el Sidebar
-  const [isLoading, setIsLoading] = useState(false);
   const [results, setResults] = useState(null);
+  const [isLoading, setIsLoading] = useState(false);
+
+  // Toast State
+  const [toast, setToast] = useState({ message: '', type: 'info', visible: false });
+
+  const showToast = useCallback((message, type = 'info') => {
+    setToast({ message, type, visible: true });
+  }, []);
+
+  const closeToast = useCallback(() => {
+    setToast(prev => ({ ...prev, visible: false }));
+  }, []);
+
+  // resetear results si cambia modo
+  useEffect(() => {
+    setResults(null);
+  }, [inputMode]);
+
+  // Callback para archivos cargados
+  const handleExternalPolygon = useCallback((geoJSON, distritoUbigeo) => {
+    setUploadedGeoJSON(geoJSON);
+    setInputMode('map');
+    // Si viene distrito, ya fue notificado por sidebar
+  }, []);
+
+  // Modal eliminado: ahora todo se controla desde el Sidebar
 
   const handlePolygonCreated = useCallback((areaHa, layer) => {
     if (areaHa === null) {
-      setPolygonArea(null);
-      setHasPolygon(false);
+      // User requested delete: Reset everything
+      handleResetAll();
       return;
     }
     setPolygonArea(areaHa);
@@ -47,7 +73,7 @@ function App() {
 
       // Validación simple
       if (!hectareasFinal || hectareasFinal <= 0) {
-        alert('Por favor ingrese un número de hectáreas válido o dibuje un polígono.');
+        showToast('Por favor ingrese un número de hectáreas válido o dibuje un polígono.', 'error');
         setIsLoading(false);
         return;
       }
@@ -74,18 +100,18 @@ function App() {
       const errorDetail = error.response?.data
         ? JSON.stringify(error.response.data, null, 2)
         : 'Error de conexión';
-      alert(`Error al calcular costos:\n${errorDetail}`);
+      showToast('Error al calcular costos. Revise la consola.', 'error');
     } finally {
       setIsLoading(false);
     }
   };
 
-  const handleClearResults = () => {
+  const handleClearResults = useCallback(() => {
     setResults(null);
     // Solo limpia resultados, mantiene inputs y polígono (Modo Editar)
-  };
+  }, []);
 
-  const handleResetAll = () => {
+  const handleResetAll = useCallback(() => {
     setResults(null);
     setPolygonArea(null);
     setHasPolygon(false);
@@ -93,8 +119,11 @@ function App() {
     setManualHectares('');
     setSelectedDistrito(null);
     setSelectedCultivo(null);
-    // Limpia todo para empezar desde cero
-  };
+    setSelectedDepartamento(''); // Reset explicit
+    setSelectedProvincia(''); // Reset explicit
+    setUploadedGeoJSON(null);
+    showToast('Formulario reiniciado', 'info');
+  }, [showToast]);
 
   return (
     <div className="app-container">
@@ -111,26 +140,33 @@ function App() {
         onClearResults={handleClearResults}
         onResetAll={handleResetAll}
         onRecalculate={handleCalculateWrapper}
-
-        // Props de Modo 
         inputMode={inputMode}
         setInputMode={setInputMode}
         manualHectares={manualHectares}
         setManualHectares={setManualHectares}
-
         hasPolygon={hasPolygon}
-        polygonArea={polygonArea} // Pasamos explícitamente el del mapa para display
+        polygonArea={polygonArea}
         isLoading={isLoading}
+        onExternalPolygonLoaded={handleExternalPolygon}
+        showToast={showToast}
       />
-
       <MapView
         onPolygonCreated={handlePolygonCreated}
         selectedDepartamento={selectedDepartamento}
         selectedProvincia={selectedProvincia}
         selectedDistrito={selectedDistrito}
         selectedCultivo={selectedCultivo}
-        canDraw={inputMode === 'map'} // Desactivar dibujo si está en manual
+        canDraw={inputMode === 'map'}
+        uploadedGeoJSON={uploadedGeoJSON}
       />
+
+      {toast.visible && (
+        <Notification
+          message={toast.message}
+          type={toast.type}
+          onClose={closeToast}
+        />
+      )}
     </div>
   );
 }

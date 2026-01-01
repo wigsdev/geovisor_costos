@@ -21,6 +21,10 @@ export default function ResultsPanel({ results, onClear, onReset, onRecalculate,
         densidad_usuario,
         sistema_siembra,
         resumen_anual,
+        // Nuevos KPIs Financieros
+        van,
+        ratio_beneficio_costo,
+        ingreso_total_estimado
     } = results;
 
     const handleExportPDF = () => {
@@ -44,7 +48,12 @@ export default function ResultsPanel({ results, onClear, onReset, onRecalculate,
         doc.text(`Area: ${hectareas?.toFixed(2)} ha`, 14, 44);
         doc.text(`Sistema: ${sistema_siembra}`, 14, 51);
 
-        // KPIs Box
+        // Financial KPIs
+        doc.setFontSize(11);
+        doc.setTextColor(50);
+        doc.text(`VAN: S/ ${parseFloat(van).toLocaleString('es-PE', { minimumFractionDigits: 2 })}`, 140, 30);
+        doc.text(`B/C: ${parseFloat(ratio_beneficio_costo).toFixed(2)}`, 140, 37);
+
         doc.setFillColor(240, 253, 244); // Light Emerald bg
         doc.roundedRect(14, 60, pageWidth - 28, 20, 3, 3, 'F');
 
@@ -98,6 +107,30 @@ export default function ResultsPanel({ results, onClear, onReset, onRecalculate,
                         <div className="text-xs text-slate-500 uppercase">Área</div>
                         <div className="text-sm font-medium text-white">{hectareas?.toFixed(2) || '0'} ha</div>
                     </div>
+                </div>
+            </div>
+
+            {/* KPIs Financieros (Nuevo v1.3) */}
+            <div className="grid grid-cols-3 gap-2 mb-4">
+                <div className={`kpi-card ${van > 0 ? 'border-emerald-500/50' : 'border-red-500/50'}`}>
+                    <div className="kpi-value text-base flex flex-col items-center justify-center leading-tight">
+                        <span className="text-[10px] text-emerald-500/80 font-normal mb-0.5">S/</span>
+                        <span>{parseFloat(van).toLocaleString('es-PE', { maximumFractionDigits: 0 })}</span>
+                    </div>
+                    <div className="kpi-label text-[9px] mt-1">VAN (Estimado)</div>
+                </div>
+                <div className="kpi-card">
+                    <div className="kpi-value text-base flex flex-col items-center justify-center leading-tight mt-[15px]">
+                        <span>{parseFloat(ratio_beneficio_costo).toFixed(2)}</span>
+                    </div>
+                    <div className="kpi-label text-[9px] mt-1">B / C</div>
+                </div>
+                <div className="kpi-card">
+                    <div className="kpi-value text-base text-emerald-400 flex flex-col items-center justify-center leading-tight">
+                        <span className="text-[10px] text-emerald-500/80 font-normal mb-0.5">S/</span>
+                        <span>{parseFloat(ingreso_total_estimado).toLocaleString('es-PE', { maximumFractionDigits: 0 })}</span>
+                    </div>
+                    <div className="kpi-label text-[9px] mt-1">Ingreso Bruto</div>
                 </div>
             </div>
 

@@ -183,6 +183,20 @@ class Cultivo(models.Model):
         verbose_name="Densidad base (árboles/ha)",
         help_text="Número de árboles por hectárea en siembra inicial"
     )
+    precio_madera_referencial: Decimal = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        default=Decimal('200.00'),
+        verbose_name="Precio Madera (S/ per m3)",
+        help_text="Precio referencial de venta por metro cúbico en pie"
+    )
+    rendimiento_m3_ha: Decimal = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        default=Decimal('250.00'),
+        verbose_name="Rendimiento (m3/ha)",
+        help_text="Volumen total de madera estimado al final del turno"
+    )
     
     class Meta:
         verbose_name = "Cultivo"

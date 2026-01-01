@@ -32,12 +32,20 @@ export const getCultivos = async (distritoId = null) => {
     return response.data;
 };
 
-/**
- * Calcula los costos de una plantación forestal.
- * @param {Object} payload - Datos del cálculo
- */
 export const calcularCostos = async (payload) => {
     const response = await api.post('/calcular-costos/', payload);
+    return response.data;
+};
+
+/**
+ * Detecta el distrito más cercano a una coordenada.
+ * @param {number} lat - Latitud
+ * @param {number} lng - Longitud
+ */
+export const detectDistrito = async (lat, lng) => {
+    const response = await api.get('/distritos/detectar/', {
+        params: { lat, lng }
+    });
     return response.data;
 };
 

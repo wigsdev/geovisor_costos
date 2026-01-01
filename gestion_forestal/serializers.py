@@ -80,7 +80,9 @@ class CultivoSerializer(serializers.ModelSerializer):
             'id',
             'nombre',
             'turno_estimado',
-            'densidad_base'
+            'densidad_base',
+            'precio_madera_referencial',
+            'rendimiento_m3_ha'
         ]
 
 
@@ -290,3 +292,9 @@ class CalculoCostosOutputSerializer(serializers.Serializer):
     detalle_actividades = ActividadCostoSerializer(many=True)
     resumen_anual = ResumenAnualSerializer(many=True)
     costo_total_proyecto = serializers.DecimalField(max_digits=14, decimal_places=2)
+    
+    # Indicadores Financieros v1.3
+    van = serializers.DecimalField(max_digits=14, decimal_places=2, required=False)
+    tir = serializers.DecimalField(max_digits=8, decimal_places=2, required=False)
+    ratio_beneficio_costo = serializers.DecimalField(max_digits=8, decimal_places=2, required=False)
+    ingreso_total_estimado = serializers.DecimalField(max_digits=14, decimal_places=2, required=False)

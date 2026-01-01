@@ -106,7 +106,7 @@ async function loadTopoJSON(url) {
 }
 
 // Componente para mostrar capas geográficas y hacer zoom
-function GeoLayers({ selectedDepartamento, selectedProvincia, selectedDistrito }) {
+function GeoLayers({ selectedDepartamento, selectedProvincia, selectedDistrito, uploadedGeoJSON }) {
     const map = useMap();
     const geoLayerRef = useRef(null);
     const [isLoading, setIsLoading] = useState(false);
@@ -232,9 +232,10 @@ function GeoLayers({ selectedDepartamento, selectedProvincia, selectedDistrito }
 
                 geoLayerRef.current = layer;
 
-                // Zoom a los límites
+                // Zoom a los límites (Solo si NO hay un polígono externo cargado que tenga prioridad)
+                // Si hay uploadedGeoJSON, DrawControl se encargará del zoom.
                 const bounds = layer.getBounds();
-                if (bounds.isValid()) {
+                if (bounds.isValid() && !uploadedGeoJSON) {
                     const maxZoom = selectedDistrito ? 13 : (selectedProvincia ? 11 : (selectedDepartamento ? 9 : 6));
                     map.fitBounds(bounds, {
                         padding: [30, 30],
@@ -256,10 +257,80 @@ function GeoLayers({ selectedDepartamento, selectedProvincia, selectedDistrito }
 }
 
 // Componente para controles de dibujo
-function DrawControl({ onPolygonCreated, canDraw }) {
+function DrawControl({ onPolygonCreated, canDraw, uploadedGeoJSON }) {
     const map = useMap();
     const featureGroupRef = useRef(null);
     const drawControlRef = useRef(null);
+    const canDrawRef = useRef(canDraw);
+
+    // Actualizar ref cuando cambia la prop, sin disparar re-render del control
+    useEffect(() => {
+        canDrawRef.current = canDraw;
+    }, [canDraw]);
+
+    // Efecto para manejar GeoJSON cargado externamente
+    useEffect(() => {
+        if (!uploadedGeoJSON || !featureGroupRef.current) return;
+
+        const featureGroup = featureGroupRef.current;
+        featureGroup.clearLayers();
+
+        try {
+            const geoJsonLayer = L.geoJSON(uploadedGeoJSON, {
+                // Estilo igual al dibujo manual
+                style: {
+                    color: '#10b981',
+                    weight: 3,
+                    fillColor: '#10b981',
+                    fillOpacity: 0.3
+                }
+            });
+
+            // Agregar cada capa individual al FeatureGroup (para que sean editables)
+            let totalAreaM2 = 0;
+            const layers = geoJsonLayer.getLayers();
+
+            if (layers.length === 0) return;
+
+            layers.forEach(layer => {
+                featureGroup.addLayer(layer);
+
+                // Calcular área si es polígono
+                if (layer instanceof L.Polygon) {
+                    const latlngs = layer.getLatLngs()[0]; // Outer ring
+                    totalAreaM2 += L.GeometryUtil.geodesicArea(latlngs);
+                }
+            });
+
+            // Zoom al polígono
+            const bounds = featureGroup.getBounds();
+            if (bounds.isValid()) {
+                map.fitBounds(bounds, { padding: [50, 50] });
+            }
+
+            // Calcular hectáreas y notificar
+            let areaHa = totalAreaM2 / 10000;
+            areaHa = Math.round(areaHa * 100) / 100;
+
+            // Poner etiqueta
+            const center = bounds.getCenter();
+            L.marker(center, {
+                icon: L.divIcon({
+                    className: 'area-tooltip',
+                    html: `<b>Area: ${areaHa} ha</b>`,
+                    iconSize: [100, 20],
+                    iconAnchor: [50, 10]
+                })
+            }).addTo(featureGroup);
+
+            // Notificar a App (actualizará Sidebar)
+            onPolygonCreated(areaHa, layers[0]);
+
+        } catch (error) {
+            console.error("Error renderizando GeoJSON:", error);
+        }
+
+    }, [uploadedGeoJSON, map, onPolygonCreated]);
 
     useEffect(() => {
         if (drawControlRef.current) return;
@@ -298,8 +369,8 @@ function DrawControl({ onPolygonCreated, canDraw }) {
         drawControlRef.current = drawControl;
 
         const onCreated = (e) => {
-            // Validar que hay distrito seleccionado
-            if (!canDraw) {
+            // Validar usando el ref actual
+            if (!canDrawRef.current) {
                 alert('⚠️ Primero debe seleccionar:\n• Departamento\n• Provincia\n• Distrito\n• Cultivo\n\nAntes de dibujar el área de plantación.');
                 featureGroup.clearLayers();
                 return;
@@ -397,6 +468,9 @@ function DrawControl({ onPolygonCreated, canDraw }) {
                 font-weight: bold;
                 font-size: 14px;
                 border-radius: 4px;
+                white-space: nowrap;
+                padding: 4px 8px;
+                min-width: max-content;
             }
             .segment-tooltip {
                 background: rgba(255,255,255,0.8);
@@ -432,7 +506,7 @@ function DrawControl({ onPolygonCreated, canDraw }) {
                 featureGroupRef.current = null;
             }
         };
-    }, [map, onPolygonCreated, canDraw]);
+    }, [map, onPolygonCreated]); // Eliminado canDraw de dependencias para evitar reset
 
     return null;
 }
@@ -447,7 +521,8 @@ export default function MapView({
     selectedProvincia,
     selectedDistrito,
     selectedCultivo,
-    canDraw // Prop recibida de App.jsx (inputMode === 'map')
+    canDraw, // Prop recibida de App.jsx (inputMode === 'map')
+    uploadedGeoJSON
 }) {
     // Determinar si tiene contexto para dibujar (distrito y cultivo seleccionados)
     const hasContext = Boolean(selectedDistrito && selectedCultivo);
@@ -464,12 +539,16 @@ export default function MapView({
                 <TileLayer
                     url="https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"
                     attribution='Tiles &copy; Esri'
+                    maxNativeZoom={17}
+                    maxZoom={22}
                 />
 
                 {/* Etiquetas */}
                 <TileLayer
                     url="https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}"
                     attribution=""
+                    maxNativeZoom={17}
+                    maxZoom={22}
                 />
 
                 {/* Capas geográficas TopoJSON */}
@@ -477,6 +556,7 @@ export default function MapView({
                     selectedDepartamento={selectedDepartamento}
                     selectedProvincia={selectedProvincia}
                     selectedDistrito={selectedDistrito}
+                    uploadedGeoJSON={uploadedGeoJSON}
                 />
 
                 {/* Control de dibujo: Solo mostrar si está en Modo Mapa (canDraw) */}
@@ -484,6 +564,7 @@ export default function MapView({
                     <DrawControl
                         onPolygonCreated={onPolygonCreated}
                         canDraw={hasContext} // Controla la validación de dependencias (Distrito/Cultivo)
+                        uploadedGeoJSON={uploadedGeoJSON}
                     />
                 )}
             </MapContainer>
