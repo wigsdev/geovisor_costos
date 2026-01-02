@@ -88,30 +88,6 @@ class DistritoViewSet(viewsets.ReadOnlyModelViewSet):
             latitud__isnull=False, 
             longitud__isnull=False
         ).values('cod_ubigeo', 'latitud', 'longitud'))
-
-        # HOTFIX: Inyectar coordenadas manuales para distritos clave
-        # Esto asegura que detecte Uchiza incluso si la BD de producción no tiene las coordenadas
-        MANUAL_COORDS = {
-            '221005': {'latitud': -8.4596, 'longitud': -76.4590}, # UCHIZA (Centro aprox)
-        }
-
-        # Indexar existentes para rápido acceso
-        existing_ubigeos = {d['cod_ubigeo'] for d in distritos}
-
-        for ubigeo, coords in MANUAL_COORDS.items():
-            if ubigeo not in existing_ubigeos:
-                distritos.append({
-                    'cod_ubigeo': ubigeo,
-                    'latitud': coords['latitud'],
-                    'longitud': coords['longitud']
-                })
-            else:
-                # Opcional: Actualizar/Corregir los existentes si se confía más en el hardcode
-                for d in distritos:
-                    if d['cod_ubigeo'] == ubigeo:
-                        d['latitud'] = coords['latitud']
-                        d['longitud'] = coords['longitud']
-                        break
         
         if not distritos:
             return Response(
