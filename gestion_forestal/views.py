@@ -407,10 +407,11 @@ class CalcularCostosView(APIView):
             resumen_por_anio[actividad.anio_proyecto][categoria_resumen] += costo_total
         
         # ===========================================
-        # CONSTRUIR RESUMEN ANUAL
+        # CONSTRUIR RESUMEN ANUAL (Refactor v1.3.1)
         # ===========================================
         
         resumen_anual = []
+        costos_instalacion = None
         costo_total_proyecto = Decimal('0')
         
         for anio in sorted(resumen_por_anio.keys()):
@@ -418,13 +419,19 @@ class CalcularCostosView(APIView):
             total_anio = datos['mano_obra'] + datos['insumos'] + datos['servicios']
             costo_total_proyecto += total_anio
             
-            resumen_anual.append({
+            resumen_obj = {
                 'anio': anio,
                 'mano_obra': datos['mano_obra'],
                 'insumos': datos['insumos'],
                 'servicios': datos['servicios'],
                 'total': total_anio
-            })
+            }
+            
+            # Segregar Año 0 (Instalación) de Años 1+ (Mantenimiento)
+            if anio == 0:
+                costos_instalacion = resumen_obj
+            else:
+                resumen_anual.append(resumen_obj)
         
         # ===========================================
         # CÁLCULO FINANCIERO (VAN / TIR)
@@ -514,7 +521,11 @@ class CalcularCostosView(APIView):
             'costo_jornal_usado': costo_jornal,
             'costo_planton_usado': costo_planton,
             'detalle_actividades': detalle_actividades,
-            'resumen_anual': resumen_anual,
+            
+            # Refactor v1.3.1 - Segregación
+            'costos_instalacion': costos_instalacion,
+            'resumen_anual': resumen_anual, # Ahora solo contiene años >= 1
+            
             'costo_total_proyecto': costo_total_proyecto,
             
             # Nuevos indicadores financieros

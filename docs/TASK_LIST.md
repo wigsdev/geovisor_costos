@@ -51,6 +51,7 @@
 ## Fase 5: Lógica de Negocio ✅
 
 - [x] Implementar cálculo de costos en backend
+    - [x] Verificar funcionamiento (`verify_refactor.py`)
 - [x] Aplicar factores (densidad, pendiente)
 - [x] Generar resumen anual de costos
 - [x] Modal de configuración de plantación

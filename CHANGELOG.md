@@ -1,5 +1,15 @@
 # Changelog
 
+## [1.3.1] - 2024-12-14
+### Refactorización
+- **Lógica de Años:** Se ha separado conceptual y técnicamente la fase de "Instalación" (Año 0) de la fase de "Mantenimiento" (Año 1+).
+- **API:** La respuesta de `calcular-costos` ahora devuelve un objeto `costos_instalacion` independiente y el array `resumen_anual` inicia estrictamente en el año 1.
+
+## [1.3.1] - 2024-12-14
+### Refactorización
+- **Lógica de Años:** Se ha separado conceptual y técnicamente la fase de "Instalación" (Año 0) de la fase de "Mantenimiento" (Año 1+).
+- **API:** La respuesta de `calcular-costos` ahora devuelve un objeto `costos_instalacion` independiente y el array `resumen_anual` inicia estrictamente en el año 1.
+
 ## [1.3.0] - 2024-12-14
 
 ### Added

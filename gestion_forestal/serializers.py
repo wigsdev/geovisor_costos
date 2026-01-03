@@ -289,8 +289,10 @@ class CalculoCostosOutputSerializer(serializers.Serializer):
     costo_planton_usado = serializers.DecimalField(max_digits=8, decimal_places=2)
     
     # Detalle y resúmenes
-    detalle_actividades = ActividadCostoSerializer(many=True)
-    resumen_anual = ResumenAnualSerializer(many=True)
+    # Costos Agrupados (Refactor v1.3.1)
+    costos_instalacion = ResumenAnualSerializer(required=False, allow_null=True)
+    resumen_anual = ResumenAnualSerializer(many=True) # Solo años >= 1
+    
     costo_total_proyecto = serializers.DecimalField(max_digits=14, decimal_places=2)
     
     # Indicadores Financieros v1.3
