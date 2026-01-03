@@ -56,33 +56,42 @@ Sistema web para calcular costos de establecimiento de plantaciones forestales e
 
 ---
 
-## 🛠️ Versión 1.3 - Flexibilidad y Datos (En Desarrollo)
-**Estado:** En Progreso 🚧
+## 🛠️ Versión 1.3 - Flexibilidad y Datos (Actual)
+**Estado:** Completado ✅
 **Objetivo:** Permitir múltiples formas de entrada de datos y enriquecer el análisis.
 
-### 1. Flexibilidad de Entrada (Solicitado)
+### 1. Flexibilidad de Entrada
 - [x] **Modo Manual (Sin Mapa):**
     - ✅ Opción para ingresar hectáreas manualmente (input numérico).
     - ✅ Toggle "Mapa / Manual" en sidebar.
     - ✅ Desactivación de herramientas de dibujo en modo manual.
-- [ ] **Carga de Archivos (Upload):**
-    - Soporte para subir archivos `.geojson`, `.kml`, `.zip` (shapefile).
-    - **Backend:** Detectar automáticamente la ubicación (Distrito) basada en el centroide del polígono subido.
-    - **Frontend:** Visualizar el polígono cargado y autocompletar el formulario.
+- [x] **Carga de Archivos (Upload):**
+    - ✅ Soporte para subir archivos `.geojson`, `.kml`, `.zip` (shapefile).
+    - ✅ **Backend:** Detectar automáticamente la ubicación (Distrito) basada en el centroide del polígono subido (`import_coords_topojson`).
+    - ✅ **Frontend:** Visualizar el polígono cargado y autocompletar el formulario.
 
-### 2. Análisis Económico (Recomendado)
-- [ ] **Indicadores Financieros:**
-    - Calcular VAN (Valor Actual Neto) y TIR (Tasa Interna de Retorno).
-    - Proyección de ingresos basada en precio de madera (configurable).
-    - Flujo de Caja simple.
+### 2. Análisis Económico
+- [x] **Indicadores Financieros:**
+    - ✅ Calcular VAN (Valor Actual Neto) y TIR.
+    - ✅ Proyección de ingresos basada en precio de madera (configurable).
+    - ✅ Flujo de Caja simple.
 
 ### 3. Mejoras en Reportes
-- [ ] **Mapa en PDF:** Incluir captura de pantalla del polígono en el reporte PDF.
-- [ ] **Desglose de Costos:** Gráficos de pastel (Highcharts/Chart.js) en el reporte.
+- [x] Reporte PDF incluye Flujo de Caja y nuevos KPIs.
 
 ---
 
-## 💾 Versión 1.4 - Persistencia y Cuentas
+## 🏗️ Versión 1.4 - Refactorización y Estabilidad
+**Estado:** Planificado
+**Objetivo:** Mejoras arquitecturales y limpieza de deuda técnica.
+
+### Características
+- [ ] **Refactorización Lógica de Años:**
+    - Segregación estricta entre Costos de Instalación (Año 0) y Mantenimiento (Año 1+).
+    - Auditoría y limpieza de fixtures de Paquete Tecnológico.
+- [ ] Auditoría de seguridad.
+
+## 💾 Versión 1.5 - Persistencia y Cuentas
 **Estado:** Planificado
 **Objetivo:** Gestión de usuarios y proyectos.
 

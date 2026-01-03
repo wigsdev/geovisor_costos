@@ -89,3 +89,10 @@
 - [x] Solución escalable para coordenadas de distritos (`import_coords_topojson`)
 - [x] Reporte PDF con Flujo de Caja
 
+---
+
+## Fase 9: Refactorización y Estabilidad (v1.4) ⏳
+
+- [ ] Implementar plan de segregación de lógica de años (Instalación vs Mantenimiento)
+- [ ] Auditoría de datos de Paquete Tecnológico (Año 0 vs 1)
+
