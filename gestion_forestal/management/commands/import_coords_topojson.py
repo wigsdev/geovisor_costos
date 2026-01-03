@@ -10,7 +10,7 @@ class Command(BaseCommand):
     help = 'Actualiza las coordenadas de los distritos calculando centroides desde el TopoJSON'
 
     def handle(self, *args, **options):
-        topo_path = os.path.join(settings.BASE_DIR, '..', 'frontend', 'public', 'geo', 'DISTRITOS_PI7.topojson')
+        topo_path = os.path.join(settings.BASE_DIR, 'frontend', 'public', 'geo', 'DISTRITOS_PI7.topojson')
         
         if not os.path.exists(topo_path):
             self.stdout.write(self.style.ERROR(f'No se encontró el archivo: {topo_path}'))
@@ -64,10 +64,13 @@ class Command(BaseCommand):
         
         for geom in geometries:
             props = geom.get('properties', {})
-            # Ajustar clave del UBIGEO según tus datos (UBIGEO, IDDIST, etc)
-            ubigeo = props.get('UBIGEO') or props.get('IDDIST')
             
-            if not ubigeo:
+            # El TopoJSON no tiene UBIGEO, usaremos nombre + provincia + departamento
+            nom_dist = props.get('NOM_DIST', '').strip().upper()
+            nom_prov = props.get('NOM_PRO', '').strip().upper()
+            nom_dep = props.get('NOM_DEP', '').strip().upper()
+            
+            if not nom_dist:
                 continue
 
             # Calcular Bounding Box de la geometría
@@ -83,15 +86,12 @@ class Command(BaseCommand):
             if geom_type == 'Polygon':
                 arcs_list = geom.get('arcs', [])
             elif geom_type == 'MultiPolygon':
-                # MultiPolygon es una lista de listas de arcos
                 for poly in geom.get('arcs', []):
                     arcs_list.extend(poly)
             
-            # Aplanar lista de arcos (puede ser lista de listas)
+            # Aplanar lista de arcos
             flat_arcs = []
             if arcs_list:
-                # Arcs structure: [[arc1, arc2], [hole1]]
-                # Flattening simple one level deep logic
                 for ring in arcs_list:
                     if isinstance(ring, list):
                         flat_arcs.extend(ring)
@@ -108,19 +108,27 @@ class Command(BaseCommand):
                     has_points = True
             
             if has_points:
-                # Centroide aproximado (centro del Bounding Box)
                 center_lng = (min_x + max_x) / 2
                 center_lat = (min_y + max_y) / 2
                 
                 try:
-                    distrito = Distrito.objects.get(cod_ubigeo=ubigeo)
+                    # Intentar buscar por coincidencia exacta de nombres
+                    # Asumimos que la BD ya tiene los nombres en mayúsculas por el importador anterior
+                    distrito = Distrito.objects.get(
+                        nombre=nom_dist,
+                        provincia=nom_prov,
+                        departamento=nom_dep
+                    )
                     distrito.latitud = Decimal(str(center_lat))
                     distrito.longitud = Decimal(str(center_lng))
                     distrito.save()
                     updated_count += 1
                     if updated_count % 50 == 0:
-                        self.stdout.write(f'   Actualizado: {distrito.nombre}')
+                        self.stdout.write(f'   Actualizado: {distrito.nombre} ({distrito.departamento})')
                 except Distrito.DoesNotExist:
-                    pass
+                    # self.stdout.write(f'   No encontrado: {nom_dist} - {nom_prov} - {nom_dep}')
+                    not_found_count += 1
+                except Distrito.MultipleObjectsReturned:
+                    self.stdout.write(self.style.WARNING(f'   Duplicado encontrado para: {nom_dist}'))
 
         self.stdout.write(self.style.SUCCESS(f'✅ Proceso terminado. Distritos actualizados: {updated_count}'))
