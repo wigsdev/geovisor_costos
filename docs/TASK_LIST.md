@@ -77,13 +77,15 @@
 - [x] Documentar mejoras futuras
 - [ ] README principal actualizado
 
+
 ---
 
-## Backlog (Mejoras Futuras)
+## Fase 8: Flexibilidad y Datos (v1.3) ✅
 
-- [ ] Detección automática de ubicación por polígono
-- [ ] Geolocalización del usuario
-- [ ] Exportar resultados a PDF
-- [ ] Guardar/cargar proyectos
-- [ ] Múltiples polígonos por proyecto
-- [ ] Comparación de cultivos
+- [x] Modo de entrada manual (Cotizador rápido)
+- [x] Carga de archivos KML/ZIP con Smart Location
+- [x] Análisis Financiero (VAN, TIR, B/C)
+- [x] Base de datos de precios de madera actualizada
+- [x] Solución escalable para coordenadas de distritos (`import_coords_topojson`)
+- [x] Reporte PDF con Flujo de Caja
+

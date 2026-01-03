@@ -65,10 +65,17 @@ Fórmula:
 - Implementado del lado del cliente usando `jspdf` y `jspdf-autotable`.
 - Evita carga en el backend al generar documentos binarios en el navegador.
 
-### 6.2 Lógica "Smart Services"
-- Automatización en frontend (`Sidebar.jsx`) que activa/desactiva el rubro "Servicios" basándose en el umbral de 10 hectáreas.
-- Backend (`views.py`) filtra dinámicamente los rubros `SERVICIOS`, `LEGAL` y `ACTIVO` según este flag.
-
-### 6.3 Sistema de Diseño
-- Paleta unificada usando variables CSS (`--text-primary`, `--brand-primary`, etc.) en `index.css`.
 - Jerarquía visual estricta: Blanco (Títulos) -> Gris Claro (Datos) -> Gris Medio (Contexto).
+
+### 6.4 Detección de Ubicación Escalable (Backend)
+- Se implementó un comando de gestión `import_coords_topojson` que extrae coordenadas (lat/ln) directamente del archivo TopoJSON.
+- Soluciona la inconsistencia entre el mapa del frontend y la base de datos del backend.
+- Lógica de matcheo basada en nombres normalizados (DEPARTAMENTO, PROVINCIA, DISTRITO) ante la ausencia de UBIGEOs en el mapa.
+
+### 6.5 Análisis Financiero
+- Backend: Integración de precios de madera reales (`BD_PRECIOS_MADERAS.csv`).
+- Cálculo de KPIs financieros:
+  - **VAN (Valor Actual Neto):** Tasa de descuento 10%.
+  - **TIR (Tasa Interna de Retorno)**.
+  - **Ratio B/C (Beneficio/Costo)**.
+- Flujo de Caja proyectado a 20 años con ingresos por raleos y cosecha final.
