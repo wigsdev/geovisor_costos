@@ -81,8 +81,8 @@ Sistema web para calcular costos de establecimiento de plantaciones forestales e
 
 ---
 
-## 🏗️ Versión 1.4 - Refactorización y Estabilidad
-**Estado:** Planificado
+## 🏗️ Versión 1.3.1 - Refactorización y Estabilidad
+**Estado:** Planificado (Siguiente)
 **Objetivo:** Mejoras arquitecturales y limpieza de deuda técnica.
 
 ### Características
@@ -91,7 +91,7 @@ Sistema web para calcular costos de establecimiento de plantaciones forestales e
     - Auditoría y limpieza de fixtures de Paquete Tecnológico.
 - [ ] Auditoría de seguridad.
 
-## 💾 Versión 1.5 - Persistencia y Cuentas
+## 💾 Versión 1.4 - Persistencia y Cuentas
 **Estado:** Planificado
 **Objetivo:** Gestión de usuarios y proyectos.
 

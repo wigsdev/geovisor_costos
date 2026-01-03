@@ -91,7 +91,7 @@
 
 ---
 
-## Fase 9: Refactorización y Estabilidad (v1.4) ⏳
+## Fase 9: Estabilidad y Refactorización (v1.3.1) ⏳
 
 - [ ] Implementar plan de segregación de lógica de años (Instalación vs Mantenimiento)
 - [ ] Auditoría de datos de Paquete Tecnológico (Año 0 vs 1)
